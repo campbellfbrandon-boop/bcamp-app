@@ -80,13 +80,10 @@ main{padding:32px;max-width:1440px;margin:0 auto;}
 .split-view{display:none;}.split-view.active{display:block;}
 
 /* ── DAY CARD ── */
-.day-card{background:var(--card);border:1px solid var(--border);padding:18px;transition:border-color .2s,box-shadow .2s;animation:fadeUp .4s ease both;cursor:pointer;}
+.day-card{background:var(--card);border:1px solid var(--border);padding:18px;transition:border-color .2s,box-shadow .2s;cursor:pointer;opacity:1;}
 .day-card:hover{border-color:var(--dim);box-shadow:0 4px 20px rgba(232,255,59,.04);}
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-.day-card:nth-child(1){animation-delay:.04s}.day-card:nth-child(2){animation-delay:.08s}
-.day-card:nth-child(3){animation-delay:.12s}.day-card:nth-child(4){animation-delay:.16s}
-.day-card:nth-child(5){animation-delay:.20s}.day-card:nth-child(6){animation-delay:.24s}
-.day-card:nth-child(7){animation-delay:.28s}
+/* animation-delays removed — handled in JS */
 .day-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:3px;}
 .day-title{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;margin-bottom:2px;}
 .day-focus{font-size:9px;color:var(--accent2);font-family:'DM Mono',monospace;letter-spacing:1px;margin-bottom:12px;text-transform:uppercase;}
@@ -97,7 +94,7 @@ main{padding:32px;max-width:1440px;margin:0 auto;}
 .day-sum-sr{font-family:'DM Mono',monospace;font-size:10px;color:var(--accent);flex-shrink:0;}
 .open-day-btn{display:flex;align-items:center;justify-content:center;gap:5px;margin-top:10px;padding:6px;border:1px solid #2a2a2a;background:transparent;color:#555;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;border-radius:2px;width:100%;transition:all .15s;}
 .open-day-btn:hover{border-color:var(--accent);color:var(--accent);}
-.rest-card{background:var(--surface);border:1px dashed var(--border);padding:18px;animation:fadeUp .4s ease both;animation-delay:.28s;}
+.rest-card{background:var(--surface);border:1px dashed var(--border);padding:18px;opacity:1;}
 .rest-card .day-title{color:var(--dim);}
 .rest-notes{margin-top:10px;font-size:11px;color:var(--muted);line-height:1.9;}
 
@@ -1078,6 +1075,11 @@ function getP3Exercises(dayIdx, isHome){
 function buildDayCard(day, phaseKey, dayIdx){
   const card = document.createElement('div');
   card.className = 'day-card';
+  // Apply fade-in via JS so iOS Safari triggers it on dynamic elements
+  card.style.opacity = '0';
+  card.style.transform = 'translateY(10px)';
+  card.style.transition = 'opacity 0.35s ease '+(dayIdx*0.06)+'s, transform 0.35s ease '+(dayIdx*0.06)+'s';
+  setTimeout(function(){ card.style.opacity='1'; card.style.transform='translateY(0)'; }, 50);
   card.innerHTML = `
     <div class="day-label">${day.dayLabel}</div>
     <div class="day-title">${day.title}</div>
@@ -2068,9 +2070,9 @@ document.addEventListener('DOMContentLoaded',()=>{
 
     // Delete same-day rows (overwrite behaviour)
     var lastRow = sheet.getLastRow();
-    if (lastRow > 1) {
+    if (lastRow &gt; 1) {
       var rows = sheet.getRange(2,1,lastRow-1,1).getValues();
-      for (var i = rows.length-1; i >= 0; i--) {
+      for (var i = rows.length-1; i &gt;= 0; i--) {
         if (rows[i][0] === data.date) sheet.deleteRow(i + 2);
       }
     }
@@ -2091,9 +2093,9 @@ document.addEventListener('DOMContentLoaded',()=>{
       master.setFrozenRows(1);
     }
     var mLast = master.getLastRow();
-    if (mLast > 1) {
+    if (mLast &gt; 1) {
       var mData = master.getRange(2,1,mLast-1,2).getValues();
-      for (var j = mData.length-1; j >= 0; j--) {
+      for (var j = mData.length-1; j &gt;= 0; j--) {
         if (mData[j][0]===data.date && mData[j][1]===sheetName) master.deleteRow(j+2);
       }
     }
@@ -2368,14 +2370,14 @@ document.getElementById('settings-overlay').addEventListener('click',function(e)
   try {
     var ss     = getOrCreateSpreadsheet();
     var master = ss.getSheetByName('_Master Log');
-    if (!master || master.getLastRow() < 2)
+    if (!master || master.getLastRow() &lt; 2)
       return ContentService.createTextOutput(JSON.stringify({ status:'ok', rows:[] }))
         .setMimeType(ContentService.MimeType.JSON);
 
     var data  = master.getDataRange().getValues();
     var headers = data[0]; // Date,Exercise,Set,Weight,Reps,Completed,Est1RM,Phase,Day
     var rows  = [];
-    for (var i = 1; i < data.length; i++) {
+    for (var i = 1; i &lt; data.length; i++) {
       var r = data[i];
       rows.push({
         date:      String(r[0] instanceof Date ? Utilities.formatDate(r[0], Session.getScriptTimeZone(), 'yyyy-MM-dd') : r[0]),
