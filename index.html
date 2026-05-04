@@ -441,7 +441,6 @@ canvas{display:block;width:100%!important;}
       </div>
       <div style="display:flex;gap:6px;align-items:center;">
         <button class="icon-btn" onclick="openNoteForWorkout()" title="Add session note" style="font-size:14px;">📝</button>
-        <button class="icon-btn" onclick="startWatchWorkout()" title="Start Apple Watch workout" style="color:var(--health);border-color:var(--health);font-size:14px;">⌚</button>
         <button class="wo-close" onclick="closeWorkout()">✕ CLOSE</button>
       </div>
     </div>
@@ -740,16 +739,30 @@ canvas{display:block;width:100%!important;}
     <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim);margin-top:8px;letter-spacing:1px;">Based on sets logged this week · MEV and MRV from Israetel et al. sports science research</div>
   </div>
 
-  <!-- APPLE HEALTH + WATCH -->
+  <!-- APPLE WATCH SHORTCUT -->
   <div style="background:var(--card);border:1px solid var(--border);padding:24px 28px;margin-bottom:2px;">
-    <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:3px;margin-bottom:4px;">APPLE <span style="color:var(--health)">HEALTH</span></div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.7;">Write your workouts to Apple Health so your Activity rings update. Also links to the Workout app on Apple Watch for when you start a session.</div>
-    <div style="display:flex;flex-direction:column;gap:8px;">
-      <button onclick="startWatchWorkout()" style="padding:14px;font-family:'DM Mono',monospace;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;background:#1c1c1e;border:2px solid var(--health);color:var(--health);border-radius:8px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:10px;">
-        <span style="font-size:22px;">⌚</span> OPEN FITNESS APP → START ON WATCH
-      </button>
-      <div style="font-size:11px;color:var(--muted);text-align:center;font-family:'DM Mono',monospace;letter-spacing:1px;line-height:1.6;">Opens Apple Fitness on iPhone (iOS) · Then start Strength Training on your Watch<br>Apple Watch Workout app cannot be opened directly from a web app</div>
-      <div id="health-status" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);text-align:center;margin-top:4px;"></div>
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:3px;margin-bottom:4px;">APPLE <span style="color:var(--health)">WATCH</span></div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:18px;line-height:1.8;">Web apps can't directly control Apple Watch — that requires a native App Store app built in Swift. The best workaround is a one-tap Shortcut on your home screen that starts a Strength Training session on your Watch instantly.</div>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:3px;padding:16px 18px;margin-bottom:2px;">
+      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--health);margin-bottom:10px;">Create a 1-Tap Watch Shortcut</div>
+      <ol style="list-style:decimal;padding-left:18px;font-size:12px;color:#aaa;line-height:2.3;">
+        <li>Open the <strong style="color:var(--text)">Shortcuts</strong> app on your iPhone</li>
+        <li>Tap <strong style="color:var(--text)">+</strong> to create a new shortcut</li>
+        <li>Tap <strong style="color:var(--text)">Add Action</strong> → search <strong style="color:var(--text)">"Log Workout"</strong></li>
+        <li>Set Workout Type to <strong style="color:var(--text)">Strength Training</strong></li>
+        <li>Tap the shortcut name at the top → rename it <strong style="color:var(--text)">"Start BCAMP"</strong></li>
+        <li>Tap <strong style="color:var(--text)">Done</strong></li>
+        <li>Long-press the shortcut → <strong style="color:var(--text)">Add to Home Screen</strong></li>
+      </ol>
+      <div style="margin-top:12px;padding:10px 14px;background:#1a0a0a;border:1px solid rgba(255,55,95,0.2);border-radius:2px;font-size:11px;color:#aaa;line-height:1.7;">
+        ⚡ Now you have <strong style="color:var(--text)">two icons</strong> side by side on your home screen — BCAMP for logging, and "Start BCAMP" to kick off the Watch workout. One tap each.
+      </div>
+    </div>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:3px;padding:16px 18px;">
+      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Or just use the Watch directly</div>
+      <div style="font-size:12px;color:#aaa;line-height:1.8;">Crown → Workout → Strength Training. After the first time, it appears at the top of the list. 3 taps, ~4 seconds. Simple works.</div>
     </div>
   </div>
 
@@ -2809,39 +2822,8 @@ document.getElementById('orm-overlay').addEventListener('click',function(e){if(e
 document.getElementById('week-picker-overlay').addEventListener('click',function(e){if(e.target===this)closeWeekPicker();});
 
 // ══ APPLE HEALTH + WATCH ══════════════════════════════════════════════════
-function startWatchWorkout(){
-  haptic('medium');
-  const el=document.getElementById('health-status');
-
-  // Apple does not expose a public URL scheme to open a specific workout type on Watch.
-  // The best available options from a web app are:
-  //   1. x-apple-fitness:// — opens the Fitness app on iPhone (iOS 16+)
-  //   2. Mirrored workout: if Watch is nearby, starting on iPhone Fitness app
-  //      will prompt Watch to start too via Handoff
-  //
-  // We try x-apple-fitness:// first, then fall back to a clear instruction.
-
-  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-
-  if(isIOS){
-    // Try opening Apple Fitness app — this is the only valid URL scheme
-    const fitnessURL = 'x-apple-fitness://';
-    window.location.href = fitnessURL;
-    setTimeout(()=>{
-      if(el){
-        el.innerHTML = '📱 Fitness app should have opened.<br>On your Watch: press the Digital Crown → <strong>Workout</strong> → <strong>Strength Training</strong> — or your Watch may prompt automatically via Handoff.';
-        el.style.textAlign = 'left';
-        el.style.lineHeight = '1.7';
-      }
-    }, 800);
-  } else {
-    // Desktop / non-iOS — just show instructions
-    if(el){
-      el.innerHTML = '⌚ On your Apple Watch: press Digital Crown → <strong>Workout</strong> → <strong>Strength Training</strong>';
-      el.style.lineHeight = '1.7';
-    }
-  }
-}
+// startWatchWorkout removed — web apps cannot control Apple Watch directly.
+// Users are directed to create an Apple Shortcut instead (see Body tab).
 
 async function writeWorkoutToHealth(durationMins, exerciseName){
   // Uses the web-based Health API (iOS 17.4+ PWAs only)
