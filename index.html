@@ -746,9 +746,9 @@ canvas{display:block;width:100%!important;}
     <div style="font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.7;">Write your workouts to Apple Health so your Activity rings update. Also links to the Workout app on Apple Watch for when you start a session.</div>
     <div style="display:flex;flex-direction:column;gap:8px;">
       <button onclick="startWatchWorkout()" style="padding:14px;font-family:'DM Mono',monospace;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;background:#1c1c1e;border:2px solid var(--health);color:var(--health);border-radius:8px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:10px;">
-        <span style="font-size:22px;">⌚</span> START WORKOUT ON APPLE WATCH
+        <span style="font-size:22px;">⌚</span> OPEN FITNESS APP → START ON WATCH
       </button>
-      <div style="font-size:11px;color:var(--muted);text-align:center;font-family:'DM Mono',monospace;letter-spacing:1px;">Opens Workout app on your Watch → Strength Training</div>
+      <div style="font-size:11px;color:var(--muted);text-align:center;font-family:'DM Mono',monospace;letter-spacing:1px;line-height:1.6;">Opens Apple Fitness on iPhone (iOS) · Then start Strength Training on your Watch<br>Apple Watch Workout app cannot be opened directly from a web app</div>
       <div id="health-status" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);text-align:center;margin-top:4px;"></div>
     </div>
   </div>
@@ -2812,14 +2812,35 @@ document.getElementById('week-picker-overlay').addEventListener('click',function
 function startWatchWorkout(){
   haptic('medium');
   const el=document.getElementById('health-status');
-  // Deep link to Workout app on Watch — opens Strength Training
-  // workout-strength = strength training category
-  const url='workout-strength-training://';
-  window.location.href=url;
-  // Fallback message after a short delay
-  setTimeout(()=>{
-    if(el) el.textContent='If your Watch didn\'t open: press Digital Crown → Workout → Strength Training';
-  },1500);
+
+  // Apple does not expose a public URL scheme to open a specific workout type on Watch.
+  // The best available options from a web app are:
+  //   1. x-apple-fitness:// — opens the Fitness app on iPhone (iOS 16+)
+  //   2. Mirrored workout: if Watch is nearby, starting on iPhone Fitness app
+  //      will prompt Watch to start too via Handoff
+  //
+  // We try x-apple-fitness:// first, then fall back to a clear instruction.
+
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+
+  if(isIOS){
+    // Try opening Apple Fitness app — this is the only valid URL scheme
+    const fitnessURL = 'x-apple-fitness://';
+    window.location.href = fitnessURL;
+    setTimeout(()=>{
+      if(el){
+        el.innerHTML = '📱 Fitness app should have opened.<br>On your Watch: press the Digital Crown → <strong>Workout</strong> → <strong>Strength Training</strong> — or your Watch may prompt automatically via Handoff.';
+        el.style.textAlign = 'left';
+        el.style.lineHeight = '1.7';
+      }
+    }, 800);
+  } else {
+    // Desktop / non-iOS — just show instructions
+    if(el){
+      el.innerHTML = '⌚ On your Apple Watch: press Digital Crown → <strong>Workout</strong> → <strong>Strength Training</strong>';
+      el.style.lineHeight = '1.7';
+    }
+  }
 }
 
 async function writeWorkoutToHealth(durationMins, exerciseName){
