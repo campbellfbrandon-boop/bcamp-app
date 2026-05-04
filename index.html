@@ -1899,5 +1899,43 @@ document.getElementById('settings-overlay').addEventListener('click',function(e)
   if(e.target===this) closeSettings();
 });
 </script>
+
+<!-- ── Update banner (shown when a new SW version is detected) ── -->
+<div id="update-banner" style="display:none;position:fixed;bottom:max(80px,calc(env(safe-area-inset-bottom)+70px));left:50%;transform:translateX(-50%);z-index:9998;background:#1c2b3a;border:1px solid var(--accent);border-radius:4px;padding:12px 18px;display:none;align-items:center;gap:12px;font-family:'DM Mono',monospace;font-size:11px;color:#ddd;letter-spacing:1px;white-space:nowrap;box-shadow:0 4px 24px rgba(0,0,0,.6);">
+  <span>⚡ Update available</span>
+  <button onclick="location.reload()" style="padding:5px 12px;background:var(--accent);color:#000;border:none;border-radius:2px;font-family:'DM Mono',monospace;font-size:10px;font-weight:700;letter-spacing:1px;cursor:pointer;">RELOAD</button>
+  <button onclick="document.getElementById('update-banner').style.display='none'" style="padding:5px 8px;background:transparent;border:1px solid var(--dim);color:var(--muted);border-radius:2px;font-family:'DM Mono',monospace;font-size:10px;cursor:pointer;">✕</button>
+</div>
+
+<script>
+// ── Service Worker registration + update detection ──────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('./sw.js')
+      .then(function(reg) {
+        console.log('BCAMP SW registered:', reg.scope);
+
+        // Check for updates every time the app comes to foreground
+        reg.update();
+        document.addEventListener('visibilitychange', function() {
+          if (!document.hidden) reg.update();
+        });
+      })
+      .catch(function(err) {
+        console.warn('BCAMP SW registration failed:', err);
+      });
+
+    // Listen for the SW_UPDATED message from the new service worker
+    navigator.serviceWorker.addEventListener('message', function(event) {
+      if (event.data && event.data.type === 'SW_UPDATED') {
+        console.log('BCAMP: new version available —', event.data.version);
+        var banner = document.getElementById('update-banner');
+        if (banner) banner.style.display = 'flex';
+      }
+    });
+  });
+}
+</script>
+
 </body>
 </html>

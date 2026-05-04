@@ -1,94 +1,104 @@
 // BCAMP Service Worker
-// Cache-first strategy for app shell, network-first for sync requests
+// !! Bump CACHE_VERSION every time you deploy an update — this forces
+//    all installed PWAs to fetch the new version automatically.
 
-const CACHE_NAME = 'bcamp-v1';
-const APP_SHELL = [
+const CACHE_VERSION = 'bcamp-v3';
+const ASSETS = [
   './',
   './index.html',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',
-  'https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap'
 ];
 
-// Install — cache the app shell
-self.addEventListener('install', function(event) {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(function(cache) {
-      console.log('BCAMP: caching app shell');
-      // Cache what we can — font CDN may fail in some environments, that's OK
+// ── Install: cache app shell ──────────────────────────────────────────────
+self.addEventListener('install', function(e) {
+  // skipWaiting forces the new SW to activate immediately
+  // instead of waiting for all tabs to close
+  self.skipWaiting();
+  e.waitUntil(
+    caches.open(CACHE_VERSION).then(function(cache) {
       return Promise.allSettled(
-        APP_SHELL.map(url => cache.add(url).catch(err => {
-          console.warn('BCAMP: failed to cache', url, err);
-        }))
+        ASSETS.map(url => cache.add(url).catch(err =>
+          console.warn('BCAMP SW: failed to cache', url, err)
+        ))
       );
-    }).then(function() {
-      return self.skipWaiting();
     })
   );
 });
 
-// Activate — clean up old caches
-self.addEventListener('activate', function(event) {
-  event.waitUntil(
+// ── Activate: delete ALL old caches immediately ───────────────────────────
+self.addEventListener('activate', function(e) {
+  e.waitUntil(
     caches.keys().then(function(keys) {
       return Promise.all(
-        keys.filter(key => key !== CACHE_NAME)
-            .map(key => {
-              console.log('BCAMP: deleting old cache', key);
-              return caches.delete(key);
-            })
+        keys
+          .filter(key => key !== CACHE_VERSION)
+          .map(key => {
+            console.log('BCAMP SW: deleting old cache', key);
+            return caches.delete(key);
+          })
       );
     }).then(function() {
+      // Take control of all open clients immediately
       return self.clients.claim();
-    })
-  );
-});
-
-// Fetch — cache first for app shell, network only for Google Sheets sync
-self.addEventListener('fetch', function(event) {
-  const url = event.request.url;
-
-  // Never intercept Google Sheets/Script requests — let them go straight to network
-  if (url.includes('script.google.com') || url.includes('sheets.googleapis.com')) {
-    return;
-  }
-
-  // For Google Fonts — network first, fall back to cache
-  if (url.includes('fonts.googleapis.com') || url.includes('fonts.gstatic.com')) {
-    event.respondWith(
-      fetch(event.request)
-        .then(function(response) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-          return response;
-        })
-        .catch(function() {
-          return caches.match(event.request);
-        })
-    );
-    return;
-  }
-
-  // App shell — cache first
-  event.respondWith(
-    caches.match(event.request).then(function(cached) {
-      if (cached) return cached;
-      return fetch(event.request).then(function(response) {
-        // Cache successful GET responses
-        if (event.request.method === 'GET' && response.status === 200) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-        }
-        return response;
+    }).then(function() {
+      // Tell all open tabs to reload so they get the new version
+      return self.clients.matchAll({ type: 'window' });
+    }).then(function(clients) {
+      clients.forEach(function(client) {
+        client.postMessage({ type: 'SW_UPDATED', version: CACHE_VERSION });
       });
     })
   );
 });
 
-// Background sync — retry failed Sheets syncs when connection restores
-self.addEventListener('sync', function(event) {
-  if (event.tag === 'bcamp-sheets-sync') {
-    console.log('BCAMP: background sync triggered');
+// ── Fetch: network-first for HTML (always get latest), cache-first for assets
+self.addEventListener('fetch', function(e) {
+  const url = e.request.url;
+
+  // Never intercept Google Sheets/Script requests
+  if (url.includes('script.google.com') || url.includes('googleapis.com')) return;
+
+  // Google Fonts — network first, fall back to cache
+  if (url.includes('fonts.googleapis.com') || url.includes('fonts.gstatic.com')) {
+    e.respondWith(
+      fetch(e.request)
+        .then(function(res) {
+          const clone = res.clone();
+          caches.open(CACHE_VERSION).then(c => c.put(e.request, clone));
+          return res;
+        })
+        .catch(() => caches.match(e.request))
+    );
+    return;
   }
+
+  // index.html — network first so updates are always picked up
+  if (url.endsWith('/') || url.includes('index.html')) {
+    e.respondWith(
+      fetch(e.request)
+        .then(function(res) {
+          const clone = res.clone();
+          caches.open(CACHE_VERSION).then(c => c.put(e.request, clone));
+          return res;
+        })
+        .catch(() => caches.match(e.request))
+    );
+    return;
+  }
+
+  // Everything else — cache first, fall back to network
+  e.respondWith(
+    caches.match(e.request).then(function(cached) {
+      if (cached) return cached;
+      return fetch(e.request).then(function(res) {
+        if (e.request.method === 'GET' && res.status === 200) {
+          const clone = res.clone();
+          caches.open(CACHE_VERSION).then(c => c.put(e.request, clone));
+        }
+        return res;
+      });
+    })
+  );
 });
