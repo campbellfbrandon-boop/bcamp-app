@@ -1075,11 +1075,6 @@ function getP3Exercises(dayIdx, isHome){
 function buildDayCard(day, phaseKey, dayIdx){
   const card = document.createElement('div');
   card.className = 'day-card';
-  // Apply fade-in via JS so iOS Safari triggers it on dynamic elements
-  card.style.opacity = '0';
-  card.style.transform = 'translateY(10px)';
-  card.style.transition = 'opacity 0.35s ease '+(dayIdx*0.06)+'s, transform 0.35s ease '+(dayIdx*0.06)+'s';
-  setTimeout(function(){ card.style.opacity='1'; card.style.transform='translateY(0)'; }, 50);
   card.innerHTML = `
     <div class="day-label">${day.dayLabel}</div>
     <div class="day-title">${day.title}</div>
@@ -1875,9 +1870,7 @@ async function runRestore(){
   }
 }
 
-document.getElementById('restore-overlay').addEventListener('click',function(e){
-  if(e.target===this) closeRestoreModal();
-});
+// restore-overlay listener moved to DOMContentLoaded (element defined later in HTML)
 document.getElementById('progress-overlay').addEventListener('click',function(e){if(e.target===this)closeProgress();});
 
 document.getElementById('workout-overlay').addEventListener('click',function(e){if(e.target===this)closeWorkout();});
@@ -1898,8 +1891,8 @@ function switchPage(page,btn){
 }
 
 let currentPhase=1;
-let currentSplitP1='p1-gym';
-let currentSplitP3='p3-gym';
+var currentSplitP1='p1-gym';
+var currentSplitP3='p3-gym';
 
 function getCurrentContext(){
   const names={1:'Phase 1 — Cut (May–Aug)',2:'Phase 2 — Lean Bulk (Sep–Dec)',3:'Phase 3 — Recomp (Jan–Apr)'};
@@ -2009,6 +2002,9 @@ document.addEventListener('DOMContentLoaded',()=>{
   updateTimerDisplay();
   calcMacros();
   initSheetsUI();
+  // Wire up event listeners for elements defined later in HTML
+  const restoreEl = document.getElementById('restore-overlay');
+  if(restoreEl) restoreEl.addEventListener('click',function(e){ if(e.target===this) closeRestoreModal(); });
   // New feature inits (safe to call after DOM ready)
   setTimeout(()=>{
     if(typeof updateWeekUI==='function') updateWeekUI();
