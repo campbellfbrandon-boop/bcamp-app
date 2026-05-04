@@ -11,6 +11,11 @@
   --accent:#e8ff3b;--accent2:#ff6b35;--text:#f0f0f0;
   --muted:#666;--dim:#444;--green:#4ade80;--red:#f87171;--blue:#60a5fa;
   --p1:#e05252;--p2:#4ade80;--p3:#60a5fa;
+  --health:#ff375f;
+}
+body.light-mode{
+  --bg:#f4f4f4;--surface:#ffffff;--card:#f0f0f0;--border:#ddd;
+  --text:#111;--muted:#888;--dim:#bbb;
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;line-height:1.5;min-height:100vh;}
@@ -158,7 +163,24 @@ main{padding:32px;max-width:1440px;margin:0 auto;}
 .history-entry{font-family:'DM Mono',monospace;font-size:10px;color:#555;padding:2px 0;}
 .history-entry .h-date{color:#888;}
 
-/* ── TIMER ── */
+
+/* ── DELOAD BANNER ── */
+#deload-banner{display:none;background:linear-gradient(135deg,#1a1200,#2a1f00);border-bottom:2px solid var(--accent);padding:10px 32px;padding-left:max(32px,calc(env(safe-area-inset-left)+32px));font-family:'DM Mono',monospace;font-size:11px;color:var(--accent);letter-spacing:2px;text-transform:uppercase;text-align:center;}
+#deload-banner.show{display:block;}
+#deload-banner strong{color:#fff;}
+
+/* ── WEEK BADGE ── */
+.week-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;background:var(--card);border:1px solid var(--border);border-radius:2px;font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;cursor:pointer;}
+.week-badge.deload{border-color:var(--accent);color:var(--accent);}
+
+/* ── AUTOCOMPLETE ── */
+.autocomplete-wrap{position:relative;}
+.autocomplete-list{display:none;position:absolute;top:100%;left:0;right:0;background:var(--card);border:1px solid var(--accent);border-top:none;border-radius:0 0 4px 4px;z-index:500;max-height:220px;overflow-y:auto;-webkit-overflow-scrolling:touch;box-shadow:0 8px 24px rgba(0,0,0,.6);}
+.autocomplete-list.open{display:block;}
+.autocomplete-item{padding:10px 14px;font-family:'DM Mono',monospace;font-size:11px;color:#ccc;cursor:pointer;border-bottom:1px solid #1a1a1a;transition:background .1s;}
+.autocomplete-item:last-child{border-bottom:none;}
+.autocomplete-item:hover,.autocomplete-item.selected{background:#1e2e1e;color:var(--accent);}
+.autocomplete-item mark{background:transparent;color:var(--accent);font-weight:700;}
 #timer-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:1000;align-items:center;justify-content:center;backdrop-filter:blur(6px);padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);}
 #timer-overlay.show{display:flex;}
 #timer-modal{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:32px 40px;text-align:center;min-width:300px;max-height:90vh;overflow-y:auto;-webkit-overflow-scrolling:touch;}
@@ -231,6 +253,34 @@ canvas{display:block;width:100%!important;}
 .progress-tab.active{background:var(--accent);color:#000;border-color:var(--accent);font-weight:700;}
 .progress-search{background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:11px;padding:6px 10px;border-radius:2px;width:220px;margin-bottom:14px;}
 .progress-search:focus{outline:none;border-color:var(--accent);}
+
+
+/* ── VOLUME LANDMARKS ── */
+.vol-landmark-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:2px;margin-bottom:2px;}
+.vol-card{background:var(--card);border:1px solid var(--border);padding:14px 16px;position:relative;}
+.vol-card h4{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+.vol-bar-wrap{height:6px;background:#1a1a1a;border-radius:3px;overflow:hidden;margin:6px 0;}
+.vol-bar{height:100%;border-radius:3px;transition:width .6s ease;}
+.vol-bar.safe{background:var(--green);}
+.vol-bar.warn{background:var(--accent);}
+.vol-bar.over{background:var(--red);}
+.vol-nums{display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);}
+.vol-nums span{color:var(--text);}
+
+
+/* ── BODYWEIGHT TRACKER ── */
+.bw-entry-row{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:center;margin-bottom:8px;}
+.bw-input{background:var(--card);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:15px;padding:8px 10px;border-radius:2px;width:100%;text-align:center;}
+.bw-input:focus{outline:none;border-color:var(--accent);}
+.bw-log-btn{padding:9px 16px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;background:var(--accent);color:#000;border:none;border-radius:2px;font-weight:700;white-space:nowrap;}
+.bw-history{margin-top:12px;}
+.bw-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #1a1a1a;font-size:12px;}
+.bw-row:last-child{border-bottom:none;}
+.bw-date{font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);}
+.bw-weight{font-family:'DM Mono',monospace;font-size:13px;color:var(--accent);font-weight:700;}
+.bw-delta{font-family:'DM Mono',monospace;font-size:10px;}
+.bw-del{background:transparent;border:none;color:var(--dim);cursor:pointer;font-size:14px;padding:0 4px;}
+.bw-del:hover{color:var(--red);}
 
 /* ── NUTRITION TAB ── */
 .nutri-hero{background:var(--card);border:1px solid var(--border);padding:28px;margin-bottom:2px;}
@@ -327,6 +377,7 @@ canvas{display:block;width:100%!important;}
       <h2>PROGRESS <span>LOG</span></h2>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
         <button class="icon-btn" onclick="exportCSV()" style="border-color:#4a7a4a;color:var(--green)">⬇ Export CSV</button>
+        <button class="icon-btn" onclick="openRestoreModal()" style="border-color:#4a4a7a;color:var(--blue)">☁ Restore from Sheets</button>
         <button class="close-progress" onclick="closeProgress()">✕ CLOSE</button>
       </div>
     </div>
@@ -361,14 +412,20 @@ canvas{display:block;width:100%!important;}
         <button class="progress-tab" data-filter="week" onclick="setLogFilter('week',this)">This Week</button>
         <button class="progress-tab" data-filter="month" onclick="setLogFilter('month',this)">This Month</button>
       </div>
-      <input type="text" class="progress-search" id="progress-search" placeholder="Search exercise..." oninput="renderLogPanel()">
+      <div class="autocomplete-wrap" style="position:relative;margin-bottom:14px;">
+        <input type="text" class="progress-search" id="progress-search" placeholder="Search exercise..." oninput="handleSearchInput(this,'progress-search-list',renderLogPanel)" autocomplete="off" style="width:100%;margin-bottom:0;">
+        <div id="progress-search-list" class="autocomplete-list"></div>
+      </div>
       <div id="progress-content"></div>
     </div>
 
     <!-- STRENGTH PANEL -->
     <div id="stats-panel-strength" class="stats-panel" style="display:none;">
       <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--muted);margin-bottom:16px;">Track your top set (heaviest weight × reps) over time per exercise.</div>
-      <input type="text" class="progress-search" id="strength-search" placeholder="Search exercise for trend..." oninput="renderStrengthPanel()" style="margin-bottom:14px;">
+      <div class="autocomplete-wrap" style="position:relative;margin-bottom:14px;">
+        <input type="text" class="progress-search" id="strength-search" placeholder="Search exercise for trend..." oninput="handleSearchInput(this,'strength-search-list',renderStrengthPanel)" autocomplete="off" style="width:100%;margin-bottom:0;">
+        <div id="strength-search-list" class="autocomplete-list"></div>
+      </div>
       <div id="strength-content"></div>
     </div>
 
@@ -385,7 +442,11 @@ canvas{display:block;width:100%!important;}
         <div class="wo-title" id="wo-title">—</div>
         <div class="wo-focus" id="wo-focus">—</div>
       </div>
-      <button class="wo-close" onclick="closeWorkout()">✕ CLOSE</button>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <button class="icon-btn" onclick="openNoteForWorkout()" title="Add session note" style="font-size:14px;">📝</button>
+        <button class="icon-btn" onclick="startWatchWorkout()" title="Start Apple Watch workout" style="color:var(--health);border-color:var(--health);font-size:14px;">⌚</button>
+        <button class="wo-close" onclick="closeWorkout()">✕ CLOSE</button>
+      </div>
     </div>
     <div class="wo-exercises" id="wo-exercises"></div>
   </div>
@@ -395,19 +456,27 @@ canvas{display:block;width:100%!important;}
 <header>
   <div class="logo">BC<span>AMP</span></div>
   <div class="header-right">
+    <div class="week-badge" id="week-badge" onclick="openWeekPicker()" title="Set current program week">
+      <span id="week-badge-label">Wk 1</span>
+    </div>
     <div id="sync-status" onclick="openSettings()" style="display:none;align-items:center;gap:5px;padding:6px 10px;border:1px solid var(--border);border-radius:4px;cursor:pointer;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);background:var(--card);transition:all .2s;" title="Sheets sync status">
       <span id="sync-dot" style="width:7px;height:7px;border-radius:50%;background:var(--muted);flex-shrink:0;display:inline-block;"></span>
       <span id="sync-label">Sheets</span>
     </div>
     <button class="icon-btn" onclick="openSettings()" title="Google Sheets sync settings">⚙ Sheets</button>
+    <button class="icon-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle light/dark mode">🌙</button>
     <button class="icon-btn" onclick="openProgress()">📊 Progress</button>
     <button class="icon-btn" onclick="openTimer(90,'Rest Timer')">⏱ Timer</button>
     <div class="nav-tabs">
       <button class="nav-tab active" onclick="switchPage('workout',this)">🏋 Program</button>
       <button class="nav-tab" onclick="switchPage('nutrition',this)">🥩 Nutrition</button>
+      <button class="nav-tab" onclick="switchPage('body',this)">⚖ Body</button>
     </div>
   </div>
 </header>
+<div id="deload-banner">
+  ⚡ DELOAD WEEK — <strong>50% Volume · 60% Intensity · Compounds Only · Eat at Maintenance</strong>
+</div>
 
 <main>
 
@@ -633,6 +702,84 @@ canvas{display:block;width:100%!important;}
     <div class="supp-card"><h4>Fish Oil (EPA/DHA)</h4><div class="supp-dose">2–3g EPA+DHA daily</div><div class="supp-note">Reduces inflammation, muscle soreness, supports joint health. Quality matters — third-party tested brand.</div><div class="evidence-pill moderate">Moderate Evidence</div></div>
   </div>
 </div><!-- /page-nutrition -->
+
+<!-- ══════════════ BODY PAGE ══════════════ -->
+<div class="page" id="page-body">
+
+  <!-- BODYWEIGHT TRACKER -->
+  <div style="background:var(--card);border:1px solid var(--border);padding:28px;margin-bottom:2px;">
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:42px;letter-spacing:4px;line-height:1;margin-bottom:4px;">BODY <span style="color:var(--accent)">TRACKER</span></div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.7;">Log your weight weekly. Track against your 200 lb goal. The trend matters — not the daily number.</div>
+    <div class="bw-entry-row">
+      <input type="number" class="bw-input" id="bw-weight-input" placeholder="Weight (lbs)" step="0.1" min="100" max="500">
+      <input type="date" class="bw-input" id="bw-date-input">
+      <button class="bw-log-btn" onclick="logBodyweight()">Log</button>
+    </div>
+    <div id="bw-apple-health-btn" style="display:none;margin-bottom:12px;">
+      <button onclick="writeWeightToHealth()" style="width:100%;padding:10px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;background:var(--health);color:#fff;border:none;border-radius:2px;font-weight:700;">❤️ Also Write to Apple Health</button>
+    </div>
+    <canvas id="bw-chart" style="margin:16px 0;display:block;width:100%;" height="140"></canvas>
+    <div id="bw-history" class="bw-history"></div>
+  </div>
+
+  <!-- PROGRAM WEEK TRACKER -->
+  <div style="background:var(--card);border:1px solid var(--border);padding:24px 28px;margin-bottom:2px;">
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:3px;margin-bottom:8px;">PROGRAM <span style="color:var(--accent)">WEEK</span></div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.7;">Set your current week in the 52-week plan. The app shows a deload reminder on weeks 4, 8, 12, 16, 20, 24, 28, 32, 38, 42, 46, 52.</div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+      <input type="number" id="week-input" min="1" max="52" placeholder="1–52"
+        style="background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:22px;padding:8px 14px;border-radius:2px;width:100px;text-align:center;">
+      <button onclick="setCurrentWeek()" style="padding:10px 20px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;background:var(--accent);color:#000;border:none;border-radius:2px;font-weight:700;">Set Week</button>
+      <div id="week-status" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);"></div>
+    </div>
+  </div>
+
+  <!-- VOLUME LANDMARKS -->
+  <div style="background:var(--card);border:1px solid var(--border);padding:24px 28px;margin-bottom:2px;">
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:3px;margin-bottom:4px;">WEEKLY <span style="color:var(--accent)">VOLUME</span></div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.7;">Sets logged this week per muscle group vs MEV (Minimum Effective Volume) and MRV (Maximum Recoverable Volume). Green = productive. Yellow = approaching limit. Red = too much — recovery impaired.</div>
+    <div class="vol-landmark-grid" id="vol-landmark-grid"></div>
+    <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--dim);margin-top:8px;letter-spacing:1px;">Based on sets logged this week · MEV and MRV from Israetel et al. sports science research</div>
+  </div>
+
+  <!-- APPLE HEALTH + WATCH -->
+  <div style="background:var(--card);border:1px solid var(--border);padding:24px 28px;margin-bottom:2px;">
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:3px;margin-bottom:4px;">APPLE <span style="color:var(--health)">HEALTH</span></div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.7;">Write your workouts to Apple Health so your Activity rings update. Also links to the Workout app on Apple Watch for when you start a session.</div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <button onclick="startWatchWorkout()" style="padding:14px;font-family:'DM Mono',monospace;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;background:#1c1c1e;border:2px solid var(--health);color:var(--health);border-radius:8px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:10px;">
+        <span style="font-size:22px;">⌚</span> START WORKOUT ON APPLE WATCH
+      </button>
+      <div style="font-size:11px;color:var(--muted);text-align:center;font-family:'DM Mono',monospace;letter-spacing:1px;">Opens Workout app on your Watch → Strength Training</div>
+      <div id="health-status" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);text-align:center;margin-top:4px;"></div>
+    </div>
+  </div>
+
+  <!-- SESSION NOTES -->
+  <div style="background:var(--card);border:1px solid var(--border);padding:24px 28px;">
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:3px;margin-bottom:4px;">SESSION <span style="color:var(--accent)">NOTES</span></div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.7;">One note per training day. Invaluable for reviewing progress months later.</div>
+    <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+      <input type="date" id="note-date-input" class="bw-input" style="flex:1;min-width:140px;">
+      <select id="note-day-select" style="flex:2;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:11px;padding:8px 10px;border-radius:2px;min-width:160px;">
+        <option value="">Select day...</option>
+        <option>Chest + Triceps</option><option>Quad-Dom Legs + Glutes</option>
+        <option>Back + Biceps</option><option>Shoulders + Chest</option>
+        <option>Hamstrings + Back + Glutes</option><option>Arms</option>
+        <option>Push A</option><option>Pull A</option><option>Legs A</option>
+        <option>Push B</option><option>Pull B</option><option>Legs B</option>
+      </select>
+    </div>
+    <textarea id="note-text-input" placeholder="How did you feel? Any PRs? Pain or tightness? Diet on point? Write anything..."
+      style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;padding:12px;border-radius:2px;resize:vertical;min-height:100px;line-height:1.7;"></textarea>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <button onclick="saveNote()" style="flex:1;padding:10px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;background:var(--accent);color:#000;border:none;border-radius:2px;font-weight:700;">💾 Save Note</button>
+      <button onclick="clearNoteForm()" style="padding:10px 14px;font-family:'DM Mono',monospace;font-size:10px;cursor:pointer;background:transparent;border:1px solid #2a2a2a;color:var(--muted);border-radius:2px;">Clear</button>
+    </div>
+    <div id="notes-list" style="margin-top:16px;"></div>
+  </div>
+
+</div><!-- /page-body -->
 
 </main>
 
@@ -1038,6 +1185,14 @@ function buildExItem(exData){
   const d=getData();
   const btn=el.querySelector('.log-toggle');
   if(d[exId]&&d[exId].length>0){btn.classList.add('has-data');btn.textContent='✓ Logged';}
+
+  // Add 1RM button
+  const ormBtn=document.createElement('button');
+  ormBtn.className='log-toggle';
+  ormBtn.style.cssText='margin-left:4px;border-color:#2a1a0a;color:var(--accent2);';
+  ormBtn.textContent='1RM';
+  ormBtn.onclick=function(e){ e.stopPropagation(); openORM(exData.name); };
+  el.querySelector('.ex-meta-row').parentNode.insertBefore(ormBtn, btn.nextSibling);
   return el;
 }
 
@@ -1255,6 +1410,99 @@ document.getElementById('timer-overlay').addEventListener('click',function(e){if
 // ══ PROGRESS / STATS ══════════════════════════════════════════════════════
 
 let progressFilter='all', currentStatsTab='overview';
+
+// ══ AUTOCOMPLETE ══════════════════════════════════════════════════════════
+
+// Returns sorted list of all exercise names logged, filtered by query
+function getExerciseSuggestions(query){
+  const data = getData();
+  const q = query.toLowerCase().trim();
+  return Object.keys(data)
+    .filter(name => !name.startsWith('__') && (!q || name.toLowerCase().includes(q)))
+    .sort((a,b) => {
+      // Exact start match first, then alphabetical
+      const aStart = a.toLowerCase().startsWith(q);
+      const bStart = b.toLowerCase().startsWith(q);
+      if(aStart && !bStart) return -1;
+      if(!aStart && bStart) return 1;
+      return a.localeCompare(b);
+    })
+    .slice(0, 10); // cap at 10 suggestions
+}
+
+// Highlight the matching part of the suggestion
+function highlightMatch(text, query){
+  if(!query) return text;
+  const idx = text.toLowerCase().indexOf(query.toLowerCase());
+  if(idx < 0) return text;
+  return text.substring(0,idx)
+    + '<mark>' + text.substring(idx, idx+query.length) + '</mark>'
+    + text.substring(idx+query.length);
+}
+
+let acActiveIdx = -1; // keyboard nav index
+
+function handleSearchInput(input, listId, renderFn){
+  renderFn(); // always re-render the results
+  const query = input.value.trim();
+  const list  = document.getElementById(listId);
+  if(!list) return;
+  acActiveIdx = -1;
+
+  if(!query){ list.classList.remove('open'); list.innerHTML=''; return; }
+
+  const suggestions = getExerciseSuggestions(query);
+  if(!suggestions.length){ list.classList.remove('open'); list.innerHTML=''; return; }
+
+  list.innerHTML = suggestions.map((name,i) =>
+    `<div class="autocomplete-item" data-value="${name}" onmousedown="selectSuggestion('${input.id}','${listId}',this,${JSON.stringify(renderFn.name)})">${highlightMatch(name, query)}</div>`
+  ).join('');
+  list.classList.add('open');
+
+  // Keyboard navigation
+  input.onkeydown = function(e){
+    const items = list.querySelectorAll('.autocomplete-item');
+    if(!items.length) return;
+    if(e.key==='ArrowDown'){
+      e.preventDefault();
+      acActiveIdx = Math.min(acActiveIdx+1, items.length-1);
+      items.forEach((it,i)=>it.classList.toggle('selected',i===acActiveIdx));
+    } else if(e.key==='ArrowUp'){
+      e.preventDefault();
+      acActiveIdx = Math.max(acActiveIdx-1, 0);
+      items.forEach((it,i)=>it.classList.toggle('selected',i===acActiveIdx));
+    } else if(e.key==='Enter' && acActiveIdx>=0){
+      e.preventDefault();
+      items[acActiveIdx].dispatchEvent(new MouseEvent('mousedown'));
+    } else if(e.key==='Escape'){
+      closeAutocomplete(listId);
+    }
+  };
+
+  // Close when input loses focus (short delay to allow click)
+  input.onblur = function(){ setTimeout(()=>closeAutocomplete(listId), 200); };
+}
+
+function selectSuggestion(inputId, listId, item, renderFnName){
+  const input = document.getElementById(inputId);
+  if(input) input.value = item.dataset.value;
+  closeAutocomplete(listId);
+  // Call the appropriate render function by name
+  if(renderFnName==='renderLogPanel') renderLogPanel();
+  else if(renderFnName==='renderStrengthPanel') renderStrengthPanel();
+}
+
+function closeAutocomplete(listId){
+  const list = document.getElementById(listId);
+  if(list){ list.classList.remove('open'); }
+}
+
+// Close all autocomplete lists when tapping outside
+document.addEventListener('click', function(e){
+  if(!e.target.closest('.autocomplete-wrap')){
+    document.querySelectorAll('.autocomplete-list').forEach(l=>l.classList.remove('open'));
+  }
+});
 
 function openProgress(){
   document.getElementById('progress-overlay').classList.add('show');
@@ -1508,6 +1756,123 @@ function clearAllData(){
   if(confirm('Delete ALL logged workout data? Cannot be undone.'))
   {localStorage.removeItem(STORAGE_KEY);renderOverview();}
 }
+
+// ══ RESTORE FROM SHEETS ═══════════════════════════════════════════════════
+
+function openRestoreModal(){
+  document.getElementById('restore-overlay').style.display = 'flex';
+  document.getElementById('restore-status').style.display = 'none';
+}
+function closeRestoreModal(){
+  document.getElementById('restore-overlay').style.display = 'none';
+}
+
+function copyDoGet(){
+  const code = document.getElementById('doget-code').textContent;
+  navigator.clipboard.writeText(code).then(()=>{
+    const btn = document.getElementById('copy-doget-btn');
+    btn.textContent = 'Copied!';
+    btn.style.color = 'var(--green)';
+    btn.style.borderColor = 'var(--green)';
+    setTimeout(()=>{ btn.textContent='Copy'; btn.style.color=''; btn.style.borderColor=''; }, 2200);
+  }).catch(()=>alert('Select and copy the code manually.'));
+}
+
+async function runRestore(){
+  const url = getSheetsURL();
+  const statusEl = document.getElementById('restore-status');
+  statusEl.style.display = 'block';
+
+  if(!url){
+    statusEl.style.color = 'var(--red)';
+    statusEl.textContent = '✕ No Sheets URL found. Set it up in ⚙ Sheets settings first.';
+    return;
+  }
+
+  statusEl.style.color = 'var(--muted)';
+  statusEl.textContent = '⏳ Fetching data from Google Sheets…';
+
+  try {
+    // doGet needs a plain GET request — no no-cors needed since we want to READ the response
+    const timeoutPromise = new Promise((_,reject)=>setTimeout(()=>reject(new Error('timeout')),15000));
+    const res = await Promise.race([
+      fetch(url, { method:'GET', mode:'cors' }),
+      timeoutPromise
+    ]);
+
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+
+    const json = await res.json();
+    if(json.status !== 'ok') throw new Error(json.message || 'Script returned error');
+    if(!json.rows || !json.rows.length){
+      statusEl.style.color = 'var(--accent)';
+      statusEl.textContent = '⚠ No data found in the _Master Log sheet yet.';
+      return;
+    }
+
+    // Rebuild localStorage data from rows
+    // Group rows by exercise → by date → collect sets
+    const data = getData(); // start with existing local data as base
+
+    const grouped = {};
+    json.rows.forEach(function(r){
+      const exId = String(r.exercise||'').trim();
+      const date = String(r.date||'').trim();
+      if(!exId || !date) return;
+      if(!grouped[exId]) grouped[exId] = {};
+      if(!grouped[exId][date]) grouped[exId][date] = [];
+      grouped[exId][date].push({
+        set:    Number(r.set)||1,
+        weight: String(r.weight||'—'),
+        reps:   String(r.reps||'—'),
+        done:   String(r.completed||'').toLowerCase()==='yes'
+      });
+    });
+
+    // Merge into existing data — overwrite same-date entries
+    let exerciseCount = 0, sessionCount = 0;
+    Object.entries(grouped).forEach(function([exId, dates]){
+      if(!data[exId]) data[exId] = [];
+      exerciseCount++;
+      Object.entries(dates).forEach(function([date, sets]){
+        sessionCount++;
+        // Sort sets by set number
+        sets.sort((a,b)=>a.set-b.set);
+        // Remove existing entry for this date
+        const idx = data[exId].findIndex(s=>s.date===date);
+        if(idx > -1) data[exId].splice(idx, 1);
+        // Add restored entry at front
+        data[exId].unshift({ date, sets });
+      });
+      // Keep sorted by date desc, cap at 30 sessions
+      data[exId].sort((a,b)=>b.date.localeCompare(a.date));
+      if(data[exId].length > 30) data[exId] = data[exId].slice(0,30);
+    });
+
+    saveData(data);
+
+    statusEl.style.color = 'var(--green)';
+    statusEl.innerHTML = `✓ Restored successfully!<br>${exerciseCount} exercises · ${sessionCount} sessions pulled from Sheets.<br><span style="color:var(--muted)">Your Progress tab now reflects your full history.</span>`;
+
+    // Refresh overview if it's open
+    if(currentStatsTab === 'overview') renderOverview();
+
+  } catch(err){
+    statusEl.style.color = 'var(--red)';
+    if(err.message === 'timeout'){
+      statusEl.textContent = '✕ Timed out. Check your internet connection and try again.';
+    } else if(err.message.includes('Failed to fetch') || err.message.includes('NetworkError')){
+      statusEl.innerHTML = '✕ Network error — this is usually a CORS issue.<br><span style="color:var(--muted)">Make sure you added the doGet function and created a <strong style="color:var(--text)">new deployment</strong> after adding it.</span>';
+    } else {
+      statusEl.textContent = '✕ Error: ' + err.message;
+    }
+    console.warn('BCAMP restore error:', err);
+  }
+}
+
+document.getElementById('restore-overlay').addEventListener('click',function(e){
+  if(e.target===this) closeRestoreModal();
+});
 document.getElementById('progress-overlay').addEventListener('click',function(e){if(e.target===this)closeProgress();});
 
 document.getElementById('workout-overlay').addEventListener('click',function(e){if(e.target===this)closeWorkout();});
@@ -1900,8 +2265,113 @@ document.getElementById('settings-overlay').addEventListener('click',function(e)
 });
 </script>
 
-<!-- ── Update banner (shown when a new SW version is detected) ── -->
-<div id="update-banner" style="display:none;position:fixed;bottom:max(80px,calc(env(safe-area-inset-bottom)+70px));left:50%;transform:translateX(-50%);z-index:9998;background:#1c2b3a;border:1px solid var(--accent);border-radius:4px;padding:12px 18px;display:none;align-items:center;gap:12px;font-family:'DM Mono',monospace;font-size:11px;color:#ddd;letter-spacing:1px;white-space:nowrap;box-shadow:0 4px 24px rgba(0,0,0,.6);">
+<!-- ── Week Picker Modal ── -->
+<div id="week-picker-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:3000;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:28px 32px;max-width:360px;width:100%;">
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:3px;margin-bottom:6px;">SET PROGRAM <span style="color:var(--accent)">WEEK</span></div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.7;">Which week of the 52-week plan are you on? Deload weeks are 4,8,12,16,20,24,28,32,38,42,46,52.</div>
+    <input type="number" id="week-picker-input" min="1" max="52" placeholder="1–52"
+      style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:28px;padding:10px 14px;border-radius:2px;text-align:center;margin-bottom:12px;">
+    <div style="display:flex;gap:8px;">
+      <button onclick="setWeekFromPicker()" style="flex:1;padding:11px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;background:var(--accent);color:#000;border:none;border-radius:2px;font-weight:700;">Set Week</button>
+      <button onclick="closeWeekPicker()" style="padding:11px 16px;font-family:'DM Mono',monospace;font-size:10px;cursor:pointer;background:transparent;border:1px solid #2a2a2a;color:var(--muted);border-radius:2px;">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 1RM Overlay ── -->
+<div id="orm-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:3000;align-items:flex-end;justify-content:center;padding-bottom:max(20px,env(safe-area-inset-bottom));">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:6px 6px 0 0;padding:24px 28px;max-width:500px;width:100%;max-height:80vh;overflow-y:auto;-webkit-overflow-scrolling:touch;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;">1RM <span style="color:var(--accent)">CALCULATOR</span></div>
+      <button onclick="closeORM()" style="padding:6px 12px;font-family:'DM Mono',monospace;font-size:10px;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);border-radius:3px;">✕</button>
+    </div>
+    <div id="orm-exercise-name" style="font-size:12px;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:18px;"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;">
+      <div>
+        <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:5px;">Weight (lbs)</div>
+        <input type="number" id="orm-weight" placeholder="e.g. 185" step="2.5"
+          style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:18px;padding:9px 12px;border-radius:2px;text-align:center;" oninput="calcORM()">
+      </div>
+      <div>
+        <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:5px;">Reps</div>
+        <input type="number" id="orm-reps" placeholder="e.g. 8" min="1" max="30"
+          style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:18px;padding:9px 12px;border-radius:2px;text-align:center;" oninput="calcORM()">
+      </div>
+    </div>
+    <div id="orm-result" style="background:var(--surface);border:1px solid var(--border);border-radius:3px;padding:16px;margin-bottom:16px;text-align:center;display:none;">
+      <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">Estimated 1RM (Epley)</div>
+      <div id="orm-e1rm" style="font-family:'Bebas Neue',sans-serif;font-size:52px;letter-spacing:3px;color:var(--accent);line-height:1;">—</div>
+      <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-top:2px;">lbs</div>
+    </div>
+    <div id="orm-table" style="display:none;">
+      <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;">Rep Max Table</div>
+      <div id="orm-table-rows" style="display:flex;flex-direction:column;gap:3px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Restore from Sheets Modal ── -->
+<div id="restore-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:3000;align-items:flex-start;justify-content:center;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:max(20px,calc(env(safe-area-inset-top)+12px)) 20px 40px;">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:28px 32px;max-width:520px;width:100%;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:3px;">RESTORE FROM <span style="color:var(--blue)">SHEETS</span></div>
+      <button onclick="closeRestoreModal()" style="padding:7px 12px;font-family:'DM Mono',monospace;font-size:10px;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);border-radius:3px;">✕</button>
+    </div>
+    <div style="font-size:12px;color:var(--muted);line-height:1.8;margin-bottom:22px;">Pulls your full workout history from Google Sheets back into this device. <strong style="color:var(--text)">This will merge with any existing local data</strong> — existing entries for the same exercise on the same date will be overwritten by the Sheet version.</div>
+
+    <!-- Step 1: needs doGet in Apps Script -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:3px;padding:16px 18px;margin-bottom:2px;">
+      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--blue);margin-bottom:8px;">Required: Add doGet to your Apps Script</div>
+      <div style="font-size:12px;color:#aaa;line-height:1.8;margin-bottom:10px;">Your Apps Script needs a <code style="background:#0a0a0a;padding:1px 5px;border-radius:2px;color:var(--accent)">doGet</code> handler so the app can read data back. Add this function to your existing script, then <strong style="color:var(--text)">create a new deployment</strong>.</div>
+      <div style="position:relative;">
+        <pre id="doget-code" style="background:#0a0a0a;border:1px solid #222;border-radius:2px;padding:10px 12px;font-family:'DM Mono',monospace;font-size:10px;color:#aaa;line-height:1.9;overflow-x:auto;max-height:180px;overflow-y:auto;margin:0;white-space:pre;">function doGet(e) {
+  try {
+    var ss     = getOrCreateSpreadsheet();
+    var master = ss.getSheetByName('_Master Log');
+    if (!master || master.getLastRow() < 2)
+      return ContentService.createTextOutput(JSON.stringify({ status:'ok', rows:[] }))
+        .setMimeType(ContentService.MimeType.JSON);
+
+    var data  = master.getDataRange().getValues();
+    var headers = data[0]; // Date,Exercise,Set,Weight,Reps,Completed,Est1RM,Phase,Day
+    var rows  = [];
+    for (var i = 1; i < data.length; i++) {
+      var r = data[i];
+      rows.push({
+        date:      String(r[0] instanceof Date ? Utilities.formatDate(r[0], Session.getScriptTimeZone(), 'yyyy-MM-dd') : r[0]),
+        exercise:  String(r[1]),
+        set:       Number(r[2]),
+        weight:    String(r[3]),
+        reps:      String(r[4]),
+        completed: String(r[5]),
+        phase:     String(r[7] || ''),
+        day:       String(r[8] || '')
+      });
+    }
+    return ContentService.createTextOutput(JSON.stringify({ status:'ok', rows:rows }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService.createTextOutput(JSON.stringify({ status:'error', message:err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}</pre>
+        <button onclick="copyDoGet()" id="copy-doget-btn" style="position:absolute;top:7px;right:7px;padding:3px 9px;font-family:'DM Mono',monospace;font-size:9px;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--muted);border-radius:2px;">Copy</button>
+      </div>
+    </div>
+
+    <!-- Step 2: Run restore -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:3px;padding:16px 18px;margin-bottom:16px;">
+      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--blue);margin-bottom:10px;">Run Restore</div>
+      <div style="font-size:12px;color:#aaa;margin-bottom:12px;line-height:1.7;">Make sure your Web App URL is saved in ⚙ Sheets settings first. The restore reads from the same URL.</div>
+      <button onclick="runRestore()" style="width:100%;padding:12px;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;background:var(--blue);color:#fff;border:none;border-radius:2px;font-weight:700;">☁ Pull from Google Sheets</button>
+      <div id="restore-status" style="margin-top:10px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;display:none;line-height:1.8;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Update banner ── -->
+<div id="update-banner" style="display:none;position:fixed;bottom:max(80px,calc(env(safe-area-inset-bottom)+70px));left:50%;transform:translateX(-50%);z-index:9998;background:#1c2b3a;border:1px solid var(--accent);border-radius:4px;padding:12px 18px;align-items:center;gap:12px;font-family:'DM Mono',monospace;font-size:11px;color:#ddd;letter-spacing:1px;white-space:nowrap;box-shadow:0 4px 24px rgba(0,0,0,.6);">
   <span>⚡ Update available</span>
   <button onclick="location.reload()" style="padding:5px 12px;background:var(--accent);color:#000;border:none;border-radius:2px;font-family:'DM Mono',monospace;font-size:10px;font-weight:700;letter-spacing:1px;cursor:pointer;">RELOAD</button>
   <button onclick="document.getElementById('update-banner').style.display='none'" style="padding:5px 8px;background:transparent;border:1px solid var(--dim);color:var(--muted);border-radius:2px;font-family:'DM Mono',monospace;font-size:10px;cursor:pointer;">✕</button>
@@ -1939,3 +2409,448 @@ if ('serviceWorker' in navigator) {
 
 </body>
 </html>
+
+<script>
+// ══ THEME TOGGLE ══════════════════════════════════════════════════════════
+const THEME_KEY='bcamp_theme';
+function toggleTheme(){
+  const isLight=document.body.classList.toggle('light-mode');
+  localStorage.setItem(THEME_KEY, isLight?'light':'dark');
+  document.getElementById('theme-btn').textContent=isLight?'🌑':'🌙';
+}
+(function initTheme(){
+  if(localStorage.getItem(THEME_KEY)==='light'){
+    document.body.classList.add('light-mode');
+    const btn=document.getElementById('theme-btn');
+    if(btn) btn.textContent='🌑';
+  }
+})();
+
+// ══ HAPTIC FEEDBACK ═══════════════════════════════════════════════════════
+function haptic(style){
+  // Uses Vibration API where available (Android + some iOS)
+  if(!navigator.vibrate) return;
+  if(style==='light') navigator.vibrate(10);
+  else if(style==='medium') navigator.vibrate(25);
+  else if(style==='success') navigator.vibrate([20,50,20]);
+}
+
+// ══ PROGRAM WEEK + DELOAD ═════════════════════════════════════════════════
+const WEEK_KEY='bcamp_program_week';
+const DELOAD_WEEKS=new Set([4,8,12,16,20,24,28,32,38,42,46,52]);
+
+function getCurrentWeek(){ return parseInt(localStorage.getItem(WEEK_KEY)||'1'); }
+function setCurrentWeek(){
+  const v=parseInt(document.getElementById('week-input').value||'1');
+  if(v<1||v>52){ alert('Enter a week between 1 and 52.'); return; }
+  localStorage.setItem(WEEK_KEY,v);
+  updateWeekUI();
+  const st=document.getElementById('week-status');
+  if(st){ st.textContent=DELOAD_WEEKS.has(v)?'⚡ This is a DELOAD week':'✓ Week '+v+' set'; st.style.color=DELOAD_WEEKS.has(v)?'var(--accent)':'var(--green)'; }
+}
+function openWeekPicker(){
+  const inp=document.getElementById('week-picker-input');
+  if(inp) inp.value=getCurrentWeek();
+  document.getElementById('week-picker-overlay').style.display='flex';
+}
+function closeWeekPicker(){ document.getElementById('week-picker-overlay').style.display='none'; }
+function setWeekFromPicker(){
+  const v=parseInt(document.getElementById('week-picker-input').value||'1');
+  if(v<1||v>52){ alert('Enter a week between 1 and 52.'); return; }
+  localStorage.setItem(WEEK_KEY,v);
+  updateWeekUI();
+  closeWeekPicker();
+}
+function updateWeekUI(){
+  const w=getCurrentWeek();
+  const isDeload=DELOAD_WEEKS.has(w);
+  // Update badge
+  const badge=document.getElementById('week-badge');
+  const label=document.getElementById('week-badge-label');
+  if(badge){ badge.className='week-badge'+(isDeload?' deload':''); }
+  if(label){ label.textContent=isDeload?'Wk '+w+' 🔥':'Wk '+w; }
+  // Update deload banner
+  const banner=document.getElementById('deload-banner');
+  if(banner){ isDeload?banner.classList.add('show'):banner.classList.remove('show'); }
+  // Update week input on body page
+  const wi=document.getElementById('week-input');
+  if(wi) wi.value=w;
+  // Update phase pills based on week
+  updatePhaseFromWeek(w);
+}
+function updatePhaseFromWeek(w){
+  // Auto-switch phase based on week
+  let phase=1;
+  if(w>=17&&w<=34) phase=2;
+  else if(w>=35) phase=3;
+  if(phase!==currentPhase){
+    switchPhase(phase);
+  }
+}
+// Init on load
+document.addEventListener('DOMContentLoaded',()=>{ setTimeout(updateWeekUI,100); });
+
+// ══ BODYWEIGHT TRACKER ════════════════════════════════════════════════════
+const BW_KEY='bcamp_bodyweight';
+function getBWData(){ try{ return JSON.parse(localStorage.getItem(BW_KEY))||[]; }catch(e){ return []; } }
+function saveBWData(d){ localStorage.setItem(BW_KEY,JSON.stringify(d)); }
+
+function logBodyweight(){
+  const w=parseFloat(document.getElementById('bw-weight-input').value);
+  const d=document.getElementById('bw-date-input').value||getDateKey();
+  if(!w||w<50||w>600){ alert('Enter a valid weight (50–600 lbs).'); return; }
+  const data=getBWData();
+  const idx=data.findIndex(e=>e.date===d);
+  if(idx>-1) data.splice(idx,1); // overwrite same date
+  data.push({date:d,weight:w});
+  data.sort((a,b)=>b.date.localeCompare(a.date));
+  saveBWData(data);
+  renderBWHistory();
+  drawBWChart();
+  haptic('success');
+  // Sync to sheets
+  const ctx=typeof getCurrentContext==='function'?getCurrentContext():{};
+  syncToSheets({
+    exercise:'__BODYWEIGHT__',
+    date:d, phase:ctx.phase||'', day:'Bodyweight Log',
+    sets:[{set:1,weight:String(w),reps:'1',done:true}]
+  });
+  document.getElementById('bw-weight-input').value='';
+}
+
+function deleteBodyweight(date){
+  const data=getBWData().filter(e=>e.date!==date);
+  saveBWData(data);
+  renderBWHistory();
+  drawBWChart();
+}
+
+function renderBWHistory(){
+  const el=document.getElementById('bw-history');
+  if(!el) return;
+  const data=getBWData().slice(0,20);
+  if(!data.length){ el.innerHTML='<div style="font-family:\'DM Mono\',monospace;font-size:11px;color:var(--muted);padding:12px 0">No entries yet. Log your first weight above.</div>'; return; }
+  el.innerHTML=data.map((e,i)=>{
+    const prev=data[i+1];
+    const delta=prev?((e.weight-prev.weight)>=0?'+':'')+((e.weight-prev.weight).toFixed(1)):'';
+    const dc=delta.startsWith('-')?'var(--green)':delta.startsWith('+')?'var(--red)':'var(--muted)';
+    return `<div class="bw-row">
+      <span class="bw-date">${e.date}</span>
+      <span class="bw-weight">${e.weight} lbs</span>
+      ${delta?`<span class="bw-delta" style="color:${dc}">${delta}</span>`:'<span></span>'}
+      <button class="bw-del" onclick="deleteBodyweight('${e.date}')">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function drawBWChart(){
+  const canvas=document.getElementById('bw-chart');
+  if(!canvas) return;
+  const data=getBWData().slice(0,26).reverse(); // oldest first
+  if(data.length<2){ canvas.style.display='none'; return; }
+  canvas.style.display='block';
+  const W=canvas.offsetWidth||340, H=140;
+  canvas.width=W; canvas.height=H;
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+  const weights=data.map(e=>e.weight);
+  const goalW=parseFloat(document.getElementById('stat-goal-weight')?.value||200);
+  const minW=Math.min(...weights,goalW)-5;
+  const maxW=Math.max(...weights,goalW)+5;
+  const scaleY=v=>H-12-((v-minW)/(maxW-minW))*(H-24);
+  const scaleX=i=>(i/(data.length-1))*(W-20)+10;
+
+  // Goal line
+  const gy=scaleY(goalW);
+  ctx.setLineDash([4,4]);
+  ctx.strokeStyle='rgba(96,165,250,0.4)';
+  ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(10,gy); ctx.lineTo(W-10,gy); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle='var(--blue)';
+  ctx.font='9px monospace';
+  ctx.fillText('Goal: '+goalW+'lb',12,gy-3);
+
+  // Weight line
+  ctx.strokeStyle='var(--accent)';
+  ctx.lineWidth=2;
+  ctx.beginPath();
+  data.forEach((e,i)=>{ i===0?ctx.moveTo(scaleX(i),scaleY(e.weight)):ctx.lineTo(scaleX(i),scaleY(e.weight)); });
+  ctx.stroke();
+
+  // Dots
+  data.forEach((e,i)=>{
+    ctx.fillStyle='var(--accent)';
+    ctx.beginPath(); ctx.arc(scaleX(i),scaleY(e.weight),3.5,0,Math.PI*2); ctx.fill();
+  });
+
+  // Current weight label
+  const last=data[data.length-1];
+  ctx.fillStyle='var(--accent)';
+  ctx.font='bold 10px monospace';
+  ctx.fillText(last.weight+'lb',scaleX(data.length-1)-15,scaleY(last.weight)-8);
+}
+
+// Init bodyweight page
+document.addEventListener('DOMContentLoaded',()=>{
+  const di=document.getElementById('bw-date-input');
+  if(di) di.value=getDateKey();
+  const ni=document.getElementById('note-date-input');
+  if(ni) ni.value=getDateKey();
+  setTimeout(()=>{ renderBWHistory(); drawBWChart(); renderVolumeLandmarks(); renderNotesList(); },200);
+});
+
+// ══ SESSION NOTES ═════════════════════════════════════════════════════════
+const NOTES_KEY='bcamp_notes';
+function getNotesData(){ try{ return JSON.parse(localStorage.getItem(NOTES_KEY))||[]; }catch(e){ return []; } }
+function saveNotesData(d){ localStorage.setItem(NOTES_KEY,JSON.stringify(d)); }
+
+function saveNote(){
+  const date=document.getElementById('note-date-input').value||getDateKey();
+  const day=document.getElementById('note-day-select').value||'';
+  const text=(document.getElementById('note-text-input').value||'').trim();
+  if(!text){ alert('Write something first.'); return; }
+  const notes=getNotesData();
+  const idx=notes.findIndex(n=>n.date===date&&n.day===day);
+  if(idx>-1) notes.splice(idx,1);
+  notes.unshift({date,day,text,ts:Date.now()});
+  if(notes.length>100) notes.splice(100);
+  saveNotesData(notes);
+  renderNotesList();
+  haptic('success');
+  clearNoteForm();
+  // Sync note to Sheets as a special exercise entry
+  syncToSheets({exercise:'__NOTE__:'+day,date,phase:'',day:day,sets:[{set:1,weight:'NOTE',reps:'0',done:true}]});
+  showSyncToast('Note saved','var(--green)');
+}
+
+function clearNoteForm(){
+  document.getElementById('note-text-input').value='';
+  document.getElementById('note-day-select').value='';
+}
+
+function deleteNote(date,day){
+  const notes=getNotesData().filter(n=>!(n.date===date&&n.day===day));
+  saveNotesData(notes);
+  renderNotesList();
+}
+
+function renderNotesList(){
+  const el=document.getElementById('notes-list');
+  if(!el) return;
+  const notes=getNotesData().slice(0,30);
+  if(!notes.length){ el.innerHTML='<div style="font-family:\'DM Mono\',monospace;font-size:11px;color:var(--muted);padding:12px 0">No notes yet.</div>'; return; }
+  el.innerHTML=notes.map(n=>`
+    <div style="background:var(--surface);border:1px solid var(--border);padding:14px 16px;margin-bottom:2px;border-radius:2px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);">${n.date}${n.day?' · '+n.day:''}</div>
+        <button onclick="deleteNote('${n.date}','${n.day}')" style="background:transparent;border:none;color:var(--dim);cursor:pointer;font-size:13px;">✕</button>
+      </div>
+      <div style="font-size:12px;color:#ccc;line-height:1.7;white-space:pre-wrap;">${n.text}</div>
+    </div>`).join('');
+}
+
+function openNoteForWorkout(){
+  // Pre-fill note form with current workout day title and switch to body tab
+  const title=document.getElementById('wo-title')?.textContent||'';
+  switchPage('body',document.querySelector('.nav-tab:nth-child(3)'));
+  setTimeout(()=>{
+    const sel=document.getElementById('note-day-select');
+    if(sel){
+      // Try to match to an option
+      for(let opt of sel.options){ if(opt.value&&title.includes(opt.value.split(' ')[0])){ sel.value=opt.value; break; } }
+    }
+    document.getElementById('note-text-input').focus();
+  },200);
+  closeWorkout();
+}
+
+// ══ VOLUME LANDMARKS ══════════════════════════════════════════════════════
+// MEV/MRV values from Mike Israetel's RP Strength research
+const VOLUME_LANDMARKS={
+  'Chest':       {mev:8,  mrv:22, exercises:['Bench','Incline','Fly','Decline','Push']},
+  'Back':        {mev:10, mrv:25, exercises:['Deadlift','Row','Pull','Lat','Meadows','T-Bar','Rack']},
+  'Shoulders':   {mev:8,  mrv:20, exercises:['OHP','Press','Lateral','Raise','Arnold','Face Pull','Shrug']},
+  'Quads':       {mev:8,  mrv:20, exercises:['Squat','Leg Press','Extension','Lunge','Split']},
+  'Hamstrings':  {mev:6,  mrv:20, exercises:['Romanian','RDL','Curl','Nordic','Good Morning']},
+  'Glutes':      {mev:4,  mrv:16, exercises:['Hip Thrust','Kickback','Glute Bridge','Bulgarian']},
+  'Biceps':      {mev:8,  mrv:20, exercises:['Curl','Hammer','Preacher','Concentration','21s']},
+  'Triceps':     {mev:6,  mrv:18, exercises:['Pushdown','Dip','Skullcrusher','Extension','Diamond','Close-Grip']},
+  'Calves':      {mev:8,  mrv:16, exercises:['Calf Raise']},
+};
+
+function getThisWeekSets(){
+  const data=getData();
+  const now=new Date(), weekStart=new Date(now);
+  weekStart.setDate(now.getDate()-now.getDay());
+  const weekKey=weekStart.toISOString().split('T')[0];
+  const setsByEx={};
+  Object.entries(data).forEach(([exId,sessions])=>{
+    const thisWeek=sessions.filter(s=>s.date>=weekKey);
+    if(thisWeek.length) setsByEx[exId]=thisWeek.reduce((a,s)=>a+s.sets.length,0);
+  });
+  return setsByEx;
+}
+
+function muscleSetCount(muscleData, setsByEx){
+  let total=0;
+  Object.entries(setsByEx).forEach(([exId,count])=>{
+    const exLower=exId.toLowerCase();
+    if(muscleData.exercises.some(kw=>exLower.includes(kw.toLowerCase()))) total+=count;
+  });
+  return total;
+}
+
+function renderVolumeLandmarks(){
+  const grid=document.getElementById('vol-landmark-grid');
+  if(!grid) return;
+  const setsByEx=getThisWeekSets();
+  grid.innerHTML=Object.entries(VOLUME_LANDMARKS).map(([muscle,lm])=>{
+    const sets=muscleSetCount(lm,setsByEx);
+    const pct=Math.min(100,Math.round((sets/lm.mrv)*100));
+    const barClass=sets<lm.mev?'warn':sets<=lm.mrv*0.85?'safe':sets<=lm.mrv?'warn':'over';
+    const statusText=sets===0?'No sets yet':sets<lm.mev?`${sets}/${lm.mev} — below MEV`:sets<=lm.mrv?`${sets} sets — productive`:` ${sets} sets — at MRV limit`;
+    return `<div class="vol-card">
+      <h4>${muscle}</h4>
+      <div class="vol-bar-wrap"><div class="vol-bar ${barClass}" style="width:${pct}%"></div></div>
+      <div class="vol-nums"><span>MEV ${lm.mev}</span><span style="color:${sets>lm.mrv?'var(--red)':sets>=lm.mev?'var(--green)':'var(--muted)'};">${sets}</span><span>MRV ${lm.mrv}</span></div>
+      <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);margin-top:4px;">${statusText}</div>
+    </div>`;
+  }).join('');
+}
+
+// ══ 1RM CALCULATOR ════════════════════════════════════════════════════════
+function openORM(exName){
+  document.getElementById('orm-exercise-name').textContent=exName||'';
+  document.getElementById('orm-weight').value='';
+  document.getElementById('orm-reps').value='';
+  document.getElementById('orm-result').style.display='none';
+  document.getElementById('orm-table').style.display='none';
+  // Pre-fill from most recent log
+  const data=getData();
+  const exId=exName.replace(/[^a-zA-Z0-9 ]/g,'').substring(0,55);
+  if(data[exId]&&data[exId][0]){
+    const lastSets=data[exId][0].sets;
+    const best=lastSets.reduce((b,s)=>{
+      const w=parseFloat(s.weight)||0,r=parseInt(s.reps)||0;
+      return w>b.w?{w,r}:b;
+    },{w:0,r:0});
+    if(best.w){ document.getElementById('orm-weight').value=best.w; document.getElementById('orm-reps').value=best.r; calcORM(); }
+  }
+  document.getElementById('orm-overlay').style.display='flex';
+}
+function closeORM(){ document.getElementById('orm-overlay').style.display='none'; }
+
+function calcORM(){
+  const w=parseFloat(document.getElementById('orm-weight').value)||0;
+  const r=parseInt(document.getElementById('orm-reps').value)||0;
+  if(!w||!r) return;
+  const e1rm=Math.round(w*(1+r/30)); // Epley
+  document.getElementById('orm-e1rm').textContent=e1rm;
+  document.getElementById('orm-result').style.display='block';
+  // Build rep max table
+  const rows=[[1,100],[2,97],[3,94],[4,92],[5,89],[6,86],[8,81],[10,75],[12,70],[15,63],[20,55]];
+  document.getElementById('orm-table-rows').innerHTML=rows.map(([reps,pct])=>{
+    const suggestedW=Math.round((e1rm*(pct/100))/2.5)*2.5;
+    const isTarget=r===reps;
+    return `<div style="display:grid;grid-template-columns:40px 60px 1fr;gap:8px;align-items:center;padding:5px 8px;background:${isTarget?'#1a1a00':'transparent'};border-radius:2px;">
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);">${reps} rep${reps>1?'s':''}</div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--accent);font-weight:700;">${suggestedW} lbs</div>
+      <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);">${pct}% 1RM</div>
+    </div>`;
+  }).join('');
+  document.getElementById('orm-table').style.display='block';
+}
+
+// Close ORM on outside tap
+document.getElementById('orm-overlay').addEventListener('click',function(e){if(e.target===this)closeORM();});
+document.getElementById('week-picker-overlay').addEventListener('click',function(e){if(e.target===this)closeWeekPicker();});
+
+// ══ APPLE HEALTH + WATCH ══════════════════════════════════════════════════
+function startWatchWorkout(){
+  haptic('medium');
+  const el=document.getElementById('health-status');
+  // Deep link to Workout app on Watch — opens Strength Training
+  // workout-strength = strength training category
+  const url='workout-strength-training://';
+  window.location.href=url;
+  // Fallback message after a short delay
+  setTimeout(()=>{
+    if(el) el.textContent='If your Watch didn\'t open: press Digital Crown → Workout → Strength Training';
+  },1500);
+}
+
+async function writeWorkoutToHealth(durationMins, exerciseName){
+  // Uses the web-based Health API (iOS 17.4+ PWAs only)
+  if(!window.health){
+    showSyncToast('Apple Health not available on this device','var(--muted)');
+    return;
+  }
+  try {
+    await window.health.requestAuthorization({
+      read:[],
+      write:['HKWorkoutTypeIdentifier']
+    });
+    const now=new Date();
+    const start=new Date(now.getTime()-(durationMins*60*1000));
+    await window.health.saveWorkout({
+      workoutActivityType:'HKWorkoutActivityTypeTraditionalStrengthTraining',
+      startDate:start.toISOString(),
+      endDate:now.toISOString(),
+      totalEnergyBurned:durationMins*6, // rough ~6 cal/min estimate
+      totalEnergyBurnedUnit:'kcal'
+    });
+    showSyncToast('Workout saved to Apple Health ❤️','var(--health)');
+  } catch(err){
+    console.warn('Health API error:',err);
+    showSyncToast('Health write failed: '+err.message,'var(--accent2)');
+  }
+}
+
+async function writeWeightToHealth(){
+  if(!window.health){ showSyncToast('Apple Health not available','var(--muted)'); return; }
+  const w=parseFloat(document.getElementById('bw-weight-input').value);
+  if(!w){ alert('Enter your weight first.'); return; }
+  try {
+    await window.health.requestAuthorization({ read:[], write:['HKQuantityTypeIdentifierBodyMass'] });
+    await window.health.saveQuantitySample({
+      quantityType:'HKQuantityTypeIdentifierBodyMass',
+      unit:'lb',
+      value:w,
+      startDate:new Date().toISOString(),
+      endDate:new Date().toISOString()
+    });
+    showSyncToast('Weight saved to Apple Health ❤️','var(--health)');
+    haptic('success');
+  } catch(err){
+    console.warn('Health weight error:',err);
+    showSyncToast('Health write failed','var(--accent2)');
+  }
+}
+
+// Show Apple Health button if API is available (iOS 17.4+ PWA)
+document.addEventListener('DOMContentLoaded',()=>{
+  setTimeout(()=>{
+    if(window.health){
+      const btn=document.getElementById('bw-apple-health-btn');
+      if(btn) btn.style.display='block';
+    }
+  },500);
+});
+
+// ══ HAPTIC ON SET DONE ════════════════════════════════════════════════════
+// Patch markSetDone to fire haptic
+const _origMarkSetDone = window.markSetDone;
+window.markSetDone = function(btn){
+  if(typeof _origMarkSetDone==='function') _origMarkSetDone(btn);
+  if(btn.classList.contains('done')) haptic('success');
+};
+
+// ══ VOLUME LANDMARKS REFRESH ══════════════════════════════════════════════
+// Refresh when progress modal opens and on page switch to body
+const _origSwitchPage = window.switchPage;
+window.switchPage = function(page, btn){
+  if(typeof _origSwitchPage==='function') _origSwitchPage(page, btn);
+  if(page==='body'){ setTimeout(()=>{ renderVolumeLandmarks(); renderBWHistory(); drawBWChart(); renderNotesList(); },100); }
+};
+</script>
