@@ -1,0 +1,82 @@
+# BCAMP PWA — GitHub Pages Deploy Guide
+# 5 minutes. No coding. Free forever.
+
+## WHAT YOU'RE DEPLOYING
+A Progressive Web App that installs on your iPhone home screen like a native app.
+Files in this zip:
+  index.html     — the full BCAMP app
+  manifest.json  — tells iOS how to install it
+  sw.js          — service worker (offline support)
+  icons/         — home screen icon + splash screen
+
+---
+
+## STEP 1 — Create a GitHub account (if you don't have one)
+Go to https://github.com and sign up. Free.
+
+---
+
+## STEP 2 — Create a new repository
+1. Click the "+" in the top right → "New repository"
+2. Name it: bcamp-app  (or anything you want)
+3. Set it to PUBLIC (required for free GitHub Pages)
+4. Click "Create repository"
+
+---
+
+## STEP 3 — Upload the files
+1. On your new repository page, click "uploading an existing file"
+2. Drag ALL files from this folder into the upload area:
+   - index.html
+   - manifest.json
+   - sw.js
+   - icons/ folder (drag the whole folder)
+3. Scroll down, click "Commit changes"
+
+---
+
+## STEP 4 — Enable GitHub Pages
+1. Go to your repository → Settings tab
+2. Scroll down to "Pages" in the left sidebar
+3. Under "Source", select "Deploy from a branch"
+4. Branch: main  |  Folder: / (root)
+5. Click Save
+6. Wait ~60 seconds, then your URL appears:
+   https://YOUR-USERNAME.github.io/bcamp-app/
+
+---
+
+## STEP 5 — Install on iPhone
+1. Open Safari on your iPhone (must be Safari, not Chrome)
+2. Go to your GitHub Pages URL above
+3. Tap the Share button (box with arrow pointing up)
+4. Tap "Add to Home Screen"
+5. Tap "Add"
+
+BCAMP now appears on your iPhone home screen as a full-screen app with no browser chrome.
+
+---
+
+## STEP 6 — Connect Google Sheets (in the app)
+1. Open BCAMP from your home screen
+2. Tap ⚙ Sheets in the header
+3. Follow the 2-step setup inside the app
+
+---
+
+## UPDATING THE APP IN FUTURE
+When we update the app here in Claude:
+1. Download the new index.html
+2. Go to your GitHub repository
+3. Click on index.html → Edit (pencil icon) → paste new content → Commit
+   OR drag the new file into the repo to replace it
+GitHub Pages redeploys automatically within ~60 seconds.
+
+---
+
+## DATA STORAGE
+- localStorage is used for fast local storage on your device
+- iOS Safari respects localStorage on installed PWAs (home screen apps)
+- Google Sheets sync backs everything up to the cloud
+- localStorage on iOS PWAs is NOT cleared when you clear Safari history
+  (it's treated as app storage, not browser storage — this is what you want)
