@@ -1250,6 +1250,8 @@ function toggleLog(btn){
 function markSetDone(btn){
   btn.classList.toggle('done');
   if(btn.classList.contains('done')){
+    // Haptic feedback
+    if(typeof haptic==='function') haptic('success');
     const restSecs=parseInt(btn.dataset.rest)||90;
     const exName=btn.dataset.exname||'Rest';
     if(restSecs>0) openTimer(restSecs, exName, true);
@@ -1882,6 +1884,14 @@ function switchPage(page,btn){
   document.querySelectorAll('.nav-tab').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-'+page).classList.add('active');
   btn.classList.add('active');
+  // Refresh body page data when switching to it
+  if(page==='body'){
+    setTimeout(()=>{
+      if(typeof renderVolumeLandmarks==='function') renderVolumeLandmarks();
+      if(typeof renderBWHistory==='function'){ renderBWHistory(); drawBWChart(); }
+      if(typeof renderNotesList==='function') renderNotesList();
+    },80);
+  }
 }
 
 let currentPhase=1;
@@ -1996,6 +2006,29 @@ document.addEventListener('DOMContentLoaded',()=>{
   updateTimerDisplay();
   calcMacros();
   initSheetsUI();
+  // New feature inits (safe to call after DOM ready)
+  setTimeout(()=>{
+    if(typeof updateWeekUI==='function') updateWeekUI();
+    if(typeof renderBWHistory==='function'){ renderBWHistory(); drawBWChart(); }
+    if(typeof renderVolumeLandmarks==='function') renderVolumeLandmarks();
+    if(typeof renderNotesList==='function') renderNotesList();
+    // Init theme
+    if(localStorage.getItem('bcamp_theme')==='light'){
+      document.body.classList.add('light-mode');
+      const btn=document.getElementById('theme-btn');
+      if(btn) btn.textContent='🌑';
+    }
+    // Set date inputs to today
+    const bwDate=document.getElementById('bw-date-input');
+    if(bwDate) bwDate.value=getDateKey();
+    const noteDate=document.getElementById('note-date-input');
+    if(noteDate) noteDate.value=getDateKey();
+    // Show Apple Health btn if available
+    if(window.health){
+      const hBtn=document.getElementById('bw-apple-health-btn');
+      if(hBtn) hBtn.style.display='block';
+    }
+  },150);
 });
 </script>
 <!-- ══ SETTINGS MODAL ══ -->
@@ -2418,13 +2451,7 @@ function toggleTheme(){
   localStorage.setItem(THEME_KEY, isLight?'light':'dark');
   document.getElementById('theme-btn').textContent=isLight?'🌑':'🌙';
 }
-(function initTheme(){
-  if(localStorage.getItem(THEME_KEY)==='light'){
-    document.body.classList.add('light-mode');
-    const btn=document.getElementById('theme-btn');
-    if(btn) btn.textContent='🌑';
-  }
-})();
+// (init consolidated into main DOMContentLoaded)
 
 // ══ HAPTIC FEEDBACK ═══════════════════════════════════════════════════════
 function haptic(style){
@@ -2487,8 +2514,7 @@ function updatePhaseFromWeek(w){
     switchPhase(phase);
   }
 }
-// Init on load
-document.addEventListener('DOMContentLoaded',()=>{ setTimeout(updateWeekUI,100); });
+// (init consolidated into main DOMContentLoaded)
 
 // ══ BODYWEIGHT TRACKER ════════════════════════════════════════════════════
 const BW_KEY='bcamp_bodyweight';
@@ -2591,14 +2617,7 @@ function drawBWChart(){
   ctx.fillText(last.weight+'lb',scaleX(data.length-1)-15,scaleY(last.weight)-8);
 }
 
-// Init bodyweight page
-document.addEventListener('DOMContentLoaded',()=>{
-  const di=document.getElementById('bw-date-input');
-  if(di) di.value=getDateKey();
-  const ni=document.getElementById('note-date-input');
-  if(ni) ni.value=getDateKey();
-  setTimeout(()=>{ renderBWHistory(); drawBWChart(); renderVolumeLandmarks(); renderNotesList(); },200);
-});
+// (init consolidated into main DOMContentLoaded)
 
 // ══ SESSION NOTES ═════════════════════════════════════════════════════════
 const NOTES_KEY='bcamp_notes';
@@ -2828,29 +2847,11 @@ async function writeWeightToHealth(){
   }
 }
 
-// Show Apple Health button if API is available (iOS 17.4+ PWA)
-document.addEventListener('DOMContentLoaded',()=>{
-  setTimeout(()=>{
-    if(window.health){
-      const btn=document.getElementById('bw-apple-health-btn');
-      if(btn) btn.style.display='block';
-    }
-  },500);
-});
+// (init consolidated into main DOMContentLoaded)
 
 // ══ HAPTIC ON SET DONE ════════════════════════════════════════════════════
-// Patch markSetDone to fire haptic
-const _origMarkSetDone = window.markSetDone;
-window.markSetDone = function(btn){
-  if(typeof _origMarkSetDone==='function') _origMarkSetDone(btn);
+// Called directly from markSetDone in the main script
+function fireHapticOnDone(btn){
   if(btn.classList.contains('done')) haptic('success');
-};
-
-// ══ VOLUME LANDMARKS REFRESH ══════════════════════════════════════════════
-// Refresh when progress modal opens and on page switch to body
-const _origSwitchPage = window.switchPage;
-window.switchPage = function(page, btn){
-  if(typeof _origSwitchPage==='function') _origSwitchPage(page, btn);
-  if(page==='body'){ setTimeout(()=>{ renderVolumeLandmarks(); renderBWHistory(); drawBWChart(); renderNotesList(); },100); }
-};
+}
 </script>
