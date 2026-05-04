@@ -2124,9 +2124,14 @@ document.addEventListener('DOMContentLoaded',()=>{
       <div id="url-status" style="margin-top:9px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;display:none;"></div>
     </div>
 
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:3px;padding:14px 18px;">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:3px;padding:14px 18px;margin-bottom:2px;">
       <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Current Status</div>
       <div id="settings-status-text" style="font-size:12px;color:#aaa;line-height:1.8;"></div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:3px;padding:14px 18px;">
+      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">App Cache</div>
+      <button onclick="hardClearCache()" style="width:100%;padding:10px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;background:transparent;border:1px solid var(--accent2);color:var(--accent2);border-radius:2px;font-weight:700;">⚡ Force Clear Cache &amp; Reload</button>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.6;">Use this if the app looks outdated after an update. Clears the service worker cache and forces a fresh download.</div>
     </div>
   </div>
 </div>
@@ -2411,32 +2416,51 @@ document.getElementById('settings-overlay').addEventListener('click',function(e)
 </div>
 
 <script>
-// ── Service Worker registration + update detection ──────────────────────
+// ── Service Worker registration + aggressive update detection ──────────
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', function() {
-    navigator.serviceWorker.register('./sw.js')
-      .then(function(reg) {
-        console.log('BCAMP SW registered:', reg.scope);
-
-        // Check for updates every time the app comes to foreground
-        reg.update();
-        document.addEventListener('visibilitychange', function() {
-          if (!document.hidden) reg.update();
-        });
-      })
-      .catch(function(err) {
-        console.warn('BCAMP SW registration failed:', err);
+  // Register and immediately check for updates
+  navigator.serviceWorker.register('./sw.js?v=10')
+    .then(function(reg) {
+      console.log('BCAMP SW registered:', reg.scope);
+      reg.update(); // check for new version right now
+      // Re-check every time app comes to foreground
+      document.addEventListener('visibilitychange', function() {
+        if (!document.hidden) reg.update();
       });
+    })
+    .catch(function(err) { console.warn('BCAMP SW failed:', err); });
 
-    // Listen for the SW_UPDATED message from the new service worker
-    navigator.serviceWorker.addEventListener('message', function(event) {
-      if (event.data && event.data.type === 'SW_UPDATED') {
-        console.log('BCAMP: new version available —', event.data.version);
-        var banner = document.getElementById('update-banner');
-        if (banner) banner.style.display = 'flex';
-      }
-    });
+  // When SW sends SW_UPDATED — reload immediately (no banner needed)
+  navigator.serviceWorker.addEventListener('message', function(event) {
+    if (event.data && event.data.type === 'SW_UPDATED') {
+      console.log('BCAMP: SW updated, reloading...');
+      window.location.reload(true);
+    }
   });
+
+  // If a new SW takes over while app is open, reload
+  navigator.serviceWorker.addEventListener('controllerchange', function() {
+    console.log('BCAMP: controller changed, reloading...');
+    window.location.reload(true);
+  });
+}
+
+// ── Hard cache clear function (accessible from Settings) ─────────────────
+async function hardClearCache() {
+  try {
+    // Unregister all service workers
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r => r.unregister()));
+    }
+    // Delete all caches
+    const keys = await caches.keys();
+    await Promise.all(keys.map(k => caches.delete(k)));
+    alert('Cache cleared. Reloading now...');
+    window.location.reload(true);
+  } catch(err) {
+    alert('Clear failed: ' + err.message);
+  }
 }
 </script>
 
