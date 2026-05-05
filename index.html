@@ -1349,6 +1349,45 @@ function parseRestToSecs(raw){
 let timerInterval=null,timerTotal=90,timerRemaining=90,timerRunning=false;
 const CIRC=2*Math.PI*60;
 
+// Shared AudioContext — reused across all beeps to avoid iOS limitations
+let _audioCtx=null;
+function getAudioCtx(){
+  if(!_audioCtx||_audioCtx.state==='closed'){
+    try{ _audioCtx=new(window.AudioContext||window.webkitAudioContext)(); }catch(e){}
+  }
+  // iOS requires resume after user interaction
+  if(_audioCtx&&_audioCtx.state==='suspended') _audioCtx.resume();
+  return _audioCtx;
+}
+
+function beep(freq, duration, gain, delay){
+  const ctx=getAudioCtx(); if(!ctx) return;
+  try{
+    const o=ctx.createOscillator(), g=ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.frequency.value=freq; o.type='sine';
+    const t=ctx.currentTime+delay;
+    g.gain.setValueAtTime(0,t);
+    g.gain.linearRampToValueAtTime(gain,t+0.01);
+    g.gain.setValueAtTime(gain,t+duration-0.05);
+    g.gain.linearRampToValueAtTime(0,t+duration);
+    o.start(t); o.stop(t+duration);
+  }catch(e){}
+}
+
+function playCountdownBeep(secondsLeft){
+  if(secondsLeft<=0) return;
+  // Short high tick at 5,4,3,2,1
+  beep(880, 0.08, 0.25, 0);
+}
+
+function playFinishSound(){
+  // Longer lower tone + ascending finish chord
+  beep(440, 0.18, 0.35, 0.00);
+  beep(554, 0.18, 0.35, 0.20);
+  beep(659, 0.40, 0.40, 0.40);
+}
+
 function setPreset(secs,el){
   clearInterval(timerInterval);timerRunning=false;timerTotal=secs;timerRemaining=secs;
   document.getElementById('timer-play-btn').textContent='START';
@@ -1361,11 +1400,11 @@ function updateTimerDisplay(){
   const m=Math.floor(timerRemaining/60),s=timerRemaining%60;
   const d=document.getElementById('timer-display');
   d.textContent=`${m}:${s.toString().padStart(2,'0')}`;
-  d.className=timerRemaining<=10?(timerRemaining===0?'done-color':'warn'):'';
+  d.className=timerRemaining<=5?(timerRemaining===0?'done-color':'warn'):'';
   const pct=timerTotal>0?timerRemaining/timerTotal:0;
   const ring=document.getElementById('timer-ring-fg');
   ring.style.strokeDashoffset=CIRC*(1-pct);
-  ring.style.stroke=timerRemaining<=10?'var(--accent2)':'var(--accent)';
+  ring.style.stroke=timerRemaining<=5?'var(--accent2)':'var(--accent)';
 }
 function toggleTimer(){
   if(timerRemaining===0){resetTimer();return;}
@@ -1373,27 +1412,26 @@ function toggleTimer(){
     clearInterval(timerInterval);timerRunning=false;
     document.getElementById('timer-play-btn').textContent='RESUME';
   } else {
+    // Unlock AudioContext on user gesture before timer starts
+    getAudioCtx();
     timerRunning=true;
     document.getElementById('timer-play-btn').textContent='PAUSE';
     document.getElementById('timer-done-msg').classList.remove('show');
     timerInterval=setInterval(()=>{
-      timerRemaining--;updateTimerDisplay();
+      timerRemaining--;
+      updateTimerDisplay();
+      // Countdown beeps at 5,4,3,2,1
+      if(timerRemaining>=1 && timerRemaining<=5){
+        playCountdownBeep(timerRemaining);
+      }
       if(timerRemaining<=0){
         clearInterval(timerInterval);timerRunning=false;
-        document.getElementById('timer-play-btn').textContent='RESTART';
-        document.getElementById('timer-done-msg').classList.add('show');
         document.getElementById('timer-display').className='done-color';
-        try{
-          const ctx=new(window.AudioContext||window.webkitAudioContext)();
-          [0,.15,.30].forEach(t=>{
-            const o=ctx.createOscillator(),g=ctx.createGain();
-            o.connect(g);g.connect(ctx.destination);
-            o.frequency.value=880;o.type='sine';
-            g.gain.setValueAtTime(.3,ctx.currentTime+t);
-            g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+t+.2);
-            o.start(ctx.currentTime+t);o.stop(ctx.currentTime+t+.3);
-          });
-        }catch(e){}
+        document.getElementById('timer-done-msg').classList.add('show');
+        playFinishSound();
+        haptic('success');
+        // Auto-close after finish sound plays (0.9s)
+        setTimeout(()=>closeTimer(), 900);
       }
     },1000);
   }
@@ -1412,11 +1450,21 @@ function openTimer(secs,label,autoStart){
   document.querySelectorAll('.preset-btn').forEach(b=>b.classList.remove('active-preset'));
   updateTimerDisplay();
   document.getElementById('timer-overlay').classList.add('show');
-  if(autoStart) setTimeout(()=>toggleTimer(),100);
+  // Reset viewport zoom (in case iOS zoomed in on an input before the timer opened)
+  resetZoom();
+  if(autoStart) setTimeout(()=>toggleTimer(),120);
 }
 function closeTimer(){
   clearInterval(timerInterval);timerRunning=false;
   document.getElementById('timer-overlay').classList.remove('show');
+}
+function resetZoom(){
+  // Forces iOS to reset any auto-zoom caused by number inputs
+  const meta=document.querySelector('meta[name="viewport"]');
+  if(!meta) return;
+  const orig=meta.content;
+  meta.content='width=device-width, initial-scale=1.0, maximum-scale=1.0';
+  setTimeout(()=>{ meta.content=orig; },100);
 }
 document.getElementById('timer-overlay').addEventListener('click',function(e){if(e.target===this)closeTimer();});
 
