@@ -82,6 +82,13 @@ main{padding:32px;max-width:1440px;margin:0 auto;}
 /* ── DAY CARD ── */
 .day-card{background:var(--card);border:1px solid var(--border);padding:18px;transition:border-color .2s,box-shadow .2s;cursor:pointer;opacity:1;}
 .day-card:hover{border-color:var(--dim);box-shadow:0 4px 20px rgba(232,255,59,.04);}
+.day-card{position:relative;}
+/* ── DAY CARD STATUS OVERLAYS ── */
+.day-card.is-today{border:2px solid var(--green) !important;box-shadow:0 0 0 1px rgba(74,222,128,.2),0 4px 20px rgba(74,222,128,.08) !important;}
+.day-card-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:2;border-radius:2px;}
+.day-card-overlay.done{background:rgba(74,222,128,.12);}
+.day-card-overlay.missed{background:rgba(248,113,113,.09);}
+.day-card-overlay .overlay-icon{font-size:64px;line-height:1;opacity:0.5;filter:drop-shadow(0 2px 8px rgba(0,0,0,.4));}
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 /* animation-delays removed — handled in JS */
 .day-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:3px;}
@@ -1087,6 +1094,8 @@ function getP3Exercises(dayIdx, isHome){
 function buildDayCard(day, phaseKey, dayIdx){
   const card = document.createElement('div');
   card.className = 'day-card';
+  card.dataset.dayIdx = dayIdx;
+  card.dataset.phaseKey = phaseKey;
   card.innerHTML = `
     <div class="day-label">${day.dayLabel}</div>
     <div class="day-title">${day.title}</div>
@@ -1102,6 +1111,105 @@ function buildDayCard(day, phaseKey, dayIdx){
     </div>
     <button class="open-day-btn" onclick="openWorkout('${phaseKey}',${dayIdx})">▶ Open Workout Mode</button>`;
   return card;
+}
+
+// dayIdx 0=Mon, 1=Tue, 2=Wed, 3=Thu, 4=Fri, 5=Sat, 6=Sun(rest)
+// JS getDay(): 0=Sun,1=Mon,2=Tue,3=Wed,4=Thu,5=Fri,6=Sat
+function getTodayDayIdx(){
+  const d = new Date().getDay(); // 0=Sun
+  if(d === 0) return 6; // Sunday = rest day
+  return d - 1;         // Mon=0 ... Sat=5
+}
+
+// Check if a given training day (dayIdx 0-5) has been logged today or on its expected date
+// We look back up to 7 days to find the most recent date that day of week occurred
+function getExpectedDateForDayIdx(dayIdx){
+  // dayIdx 0=Mon...5=Sat
+  const targetJSDay = dayIdx + 1; // Mon=1...Sat=6
+  const d = new Date();
+  for(let i=0; i<7; i++){
+    const check = new Date(d);
+    check.setDate(d.getDate() - i);
+    if(check.getDay() === targetJSDay){
+      const y = check.getFullYear();
+      const m = String(check.getMonth()+1).padStart(2,'0');
+      const day = String(check.getDate()).padStart(2,'0');
+      return `${y}-${m}-${day}`;
+    }
+  }
+  return null;
+}
+
+function wasWorkoutLoggedOnDate(phaseKey, dayIdx, date){
+  if(!date) return false;
+  const data = getData();
+  // Get the workout for this day
+  let dayExercises = [];
+  if(phaseKey === 'p3-gym' || phaseKey === 'p3-home'){
+    const base = WORKOUTS[phaseKey==='p3-gym'?'p1-gym':'p1-home'];
+    if(base && base[dayIdx]) dayExercises = (base[dayIdx].exercises||[]);
+  } else {
+    const days = WORKOUTS[phaseKey];
+    if(days && days[dayIdx]) dayExercises = (days[dayIdx].exercises||[]);
+  }
+  // Check if ANY exercise from this day was logged on this date
+  return dayExercises.some(ex => {
+    if(ex.type !== 'ex' && ex.type !== undefined && ex.type !== 'ex') return false;
+    const exId = (ex.name||'').replace(/[^a-zA-Z0-9 ]/g,'').substring(0,55);
+    return data[exId] && data[exId].some(s => s.date === date);
+  });
+}
+
+function applyDayCardStatus(gridId){
+  const grid = document.getElementById(gridId);
+  if(!grid) return;
+  const todayIdx = getTodayDayIdx();
+  const cards = grid.querySelectorAll('.day-card');
+
+  cards.forEach(card => {
+    const dayIdx = parseInt(card.dataset.dayIdx);
+    const phaseKey = card.dataset.phaseKey;
+    if(isNaN(dayIdx) || !phaseKey) return;
+
+    // Remove any existing overlay
+    const existing = card.querySelector('.day-card-overlay');
+    if(existing) existing.remove();
+    card.classList.remove('is-today');
+
+    // Is this today's training day?
+    const isToday = (dayIdx === todayIdx);
+    if(isToday) card.classList.add('is-today');
+
+    // Check the expected date for this day of week
+    const expectedDate = getExpectedDateForDayIdx(dayIdx);
+    const wasLogged = wasWorkoutLoggedOnDate(phaseKey, dayIdx, expectedDate);
+
+    // Only show done/missed overlay for past days (not today, not future)
+    const isPast = dayIdx < todayIdx;
+    const isFuture = dayIdx > todayIdx;
+
+    if(wasLogged){
+      // Done — green overlay with checkmark (show for any logged day incl. today)
+      const overlay = document.createElement('div');
+      overlay.className = 'day-card-overlay done';
+      overlay.innerHTML = '<span class="overlay-icon">✅</span>';
+      card.appendChild(overlay);
+    } else if(isPast){
+      // Missed — red overlay with X (only past unlogged days)
+      const overlay = document.createElement('div');
+      overlay.className = 'day-card-overlay missed';
+      overlay.innerHTML = '<span class="overlay-icon">❌</span>';
+      card.appendChild(overlay);
+    }
+    // Future days and unlogged today get no overlay — just the green border if today
+  });
+}
+
+function refreshAllCardStatus(){
+  // Re-apply status to all built grids
+  ['grid-p1-gym','grid-p1-home','grid-p2','grid-p3-gym','grid-p3-home'].forEach(id => {
+    applyDayCardStatus(id);
+  });
 }
 
 function buildRestCard(){
@@ -1120,6 +1228,7 @@ function populateGrid(gridId, days, phaseKey){
   grid.dataset.built = '1';
   days.forEach((day,i) => grid.appendChild(buildDayCard(day, phaseKey, i)));
   grid.appendChild(buildRestCard());
+  setTimeout(()=>applyDayCardStatus(gridId), 50);
 }
 
 function populateP3Grid(gridId, isHome, phaseKey){
@@ -1132,6 +1241,7 @@ function populateP3Grid(gridId, isHome, phaseKey){
     if(day) grid.appendChild(buildDayCard(day, phaseKey, i));
   }
   grid.appendChild(buildRestCard());
+  setTimeout(()=>applyDayCardStatus(gridId), 50);
 }
 
 // ══ WORKOUT MODAL ══════════════════════════════════════════════════════════
@@ -1312,6 +1422,8 @@ function saveLog(btn){
     sets:     sets.map(s=>({set:Number(s.set),weight:String(s.weight),reps:String(s.reps),done:!!s.done}))
   };
   setTimeout(()=>syncToSheets(syncPayload), 0);
+  // Refresh card status overlays — this workout may now show as done
+  setTimeout(()=>refreshAllCardStatus(), 100);
 }
 
 function clearLog(btn){
