@@ -381,6 +381,7 @@ canvas{display:block;width:100%!important;}
       <h2>PROGRESS <span>LOG</span></h2>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
         <button class="icon-btn" onclick="exportCSV()" style="border-color:#4a7a4a;color:var(--green)">⬇ Export CSV</button>
+        <button class="icon-btn" onclick="syncAllToSheets()" style="border-color:#2a4a7a;color:var(--blue)" id="sync-all-btn">☁ Sync All to Sheets</button>
         <button class="icon-btn" onclick="openRestoreModal()" style="border-color:#4a4a7a;color:var(--blue)">☁ Restore from Sheets</button>
         <button class="close-progress" onclick="closeProgress()">✕ CLOSE</button>
       </div>
@@ -1929,6 +1930,62 @@ function exportCSV(){
   const a=document.createElement('a');
   a.href=url;a.download='bcamp_workout_log.csv';a.click();
   URL.revokeObjectURL(url);
+}
+
+// ── SYNC ALL TO SHEETS ────────────────────────────────────────────────────
+async function syncAllToSheets(){
+  const url = getSheetsURL();
+  const btn = document.getElementById('sync-all-btn');
+  if(!url){
+    showSyncToast('No Sheets URL configured — open ⚙ Sheets to set it up','var(--accent2)');
+    return;
+  }
+  const data = getData();
+  const entries = Object.entries(data).filter(([id]) => !id.startsWith('__'));
+  if(!entries.length){
+    showSyncToast('No workout data to sync','var(--muted)');
+    return;
+  }
+
+  // Show progress on button
+  if(btn){ btn.textContent='Syncing...'; btn.style.opacity='0.6'; btn.disabled=true; }
+  updateSyncDot('syncing');
+
+  let sent=0, failed=0;
+  const total = entries.reduce((a,[,sessions])=>a+sessions.length,0);
+
+  for(const [exId, sessions] of entries){
+    for(const session of sessions){
+      const payload = {
+        exercise: exId,
+        date:     session.date,
+        phase:    '',
+        day:      '',
+        sets:     session.sets.map(s=>({
+          set:    Number(s.set),
+          weight: String(s.weight),
+          reps:   String(s.reps),
+          done:   !!s.done
+        }))
+      };
+      const res = await syncToSheets(payload, true);
+      if(res !== null) sent++;
+      else failed++;
+      // Small delay between requests to avoid overwhelming Apps Script
+      await new Promise(r=>setTimeout(r,150));
+    }
+  }
+
+  // Restore button
+  if(btn){ btn.textContent='☁ Sync All to Sheets'; btn.style.opacity='1'; btn.disabled=false; }
+
+  if(failed === 0){
+    updateSyncDot('idle');
+    showSyncToast(`✓ Synced ${sent} sessions to Sheets`,'var(--green)');
+  } else {
+    updateSyncDot('error');
+    showSyncToast(`${sent} synced · ${failed} failed — try again`,'var(--accent2)');
+  }
 }
 
 function clearAllData(){
