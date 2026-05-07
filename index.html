@@ -87,7 +87,6 @@ main{padding:32px;max-width:1440px;margin:0 auto;}
 .day-card.is-today{border:2px solid var(--green) !important;box-shadow:0 0 0 1px rgba(74,222,128,.2),0 4px 20px rgba(74,222,128,.08) !important;}
 .day-card-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:2;border-radius:2px;}
 .day-card-overlay.done{background:rgba(74,222,128,.12);}
-.day-card-overlay.missed{background:rgba(248,113,113,.09);}
 .day-card-overlay .overlay-icon{font-size:64px;line-height:1;opacity:0.5;filter:drop-shadow(0 2px 8px rgba(0,0,0,.4));}
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 /* animation-delays removed — handled in JS */
@@ -366,8 +365,10 @@ canvas{display:block;width:100%!important;}
       <button class="preset-btn" onclick="setPreset(180,this)">3:00</button>
     </div>
     <div class="timer-controls">
+      <button class="timer-btn" onclick="adjustTimer(-5)" style="background:transparent;border:1px solid var(--dim);color:var(--muted);padding:10px 14px;">-5s</button>
       <button class="timer-btn play" id="timer-play-btn" onclick="toggleTimer()">START</button>
       <button class="timer-btn stop" onclick="resetTimer()">RESET</button>
+      <button class="timer-btn" onclick="adjustTimer(5)" style="background:transparent;border:1px solid var(--dim);color:var(--muted);padding:10px 14px;">+5s</button>
       <button class="timer-btn close-t" onclick="closeTimer()">CLOSE</button>
     </div>
     <div class="timer-done-msg" id="timer-done-msg">✓ REST DONE — GET AFTER IT</div>
@@ -1124,85 +1125,46 @@ function getTodayDayIdx(){
 
 // Check if a given training day (dayIdx 0-5) has been logged today or on its expected date
 // We look back up to 7 days to find the most recent date that day of week occurred
-function getExpectedDateForDayIdx(dayIdx){
-  // dayIdx 0=Mon...5=Sat
-  const targetJSDay = dayIdx + 1; // Mon=1...Sat=6
-  const d = new Date();
-  for(let i=0; i<7; i++){
-    const check = new Date(d);
-    check.setDate(d.getDate() - i);
-    if(check.getDay() === targetJSDay){
-      const y = check.getFullYear();
-      const m = String(check.getMonth()+1).padStart(2,'0');
-      const day = String(check.getDate()).padStart(2,'0');
-      return `${y}-${m}-${day}`;
-    }
-  }
-  return null;
+function getThisWeekDateRange(){
+  const now=new Date(), day=now.getDay();
+  const monday=new Date(now); monday.setDate(now.getDate()-(day===0?6:day-1)); monday.setHours(0,0,0,0);
+  const sunday=new Date(monday); sunday.setDate(monday.getDate()+6); sunday.setHours(23,59,59,999);
+  const fmt=d=>{const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dy=String(d.getDate()).padStart(2,'0');return y+'-'+m+'-'+dy;};
+  return{start:fmt(monday),end:fmt(sunday)};
 }
 
-function wasWorkoutLoggedOnDate(phaseKey, dayIdx, date){
-  if(!date) return false;
-  const data = getData();
-  // Get the workout for this day
-  let dayExercises = [];
-  if(phaseKey === 'p3-gym' || phaseKey === 'p3-home'){
-    const base = WORKOUTS[phaseKey==='p3-gym'?'p1-gym':'p1-home'];
-    if(base && base[dayIdx]) dayExercises = (base[dayIdx].exercises||[]);
+function wasWorkoutLoggedThisWeek(phaseKey, dayIdx){
+  const data=getData(), {start,end}=getThisWeekDateRange();
+  let exs=[];
+  if(phaseKey==='p3-gym'||phaseKey==='p3-home'){
+    const base=WORKOUTS[phaseKey==='p3-gym'?'p1-gym':'p1-home'];
+    if(base&&base[dayIdx]) exs=base[dayIdx].exercises||[];
   } else {
-    const days = WORKOUTS[phaseKey];
-    if(days && days[dayIdx]) dayExercises = (days[dayIdx].exercises||[]);
+    const days=WORKOUTS[phaseKey];
+    if(days&&days[dayIdx]) exs=days[dayIdx].exercises||[];
   }
-  // Check if ANY exercise from this day was logged on this date
-  return dayExercises.some(ex => {
-    if(ex.type !== 'ex' && ex.type !== undefined && ex.type !== 'ex') return false;
-    const exId = (ex.name||'').replace(/[^a-zA-Z0-9 ]/g,'').substring(0,55);
-    return data[exId] && data[exId].some(s => s.date === date);
+  return exs.some(ex=>{
+    if(ex.type&&ex.type!=='ex') return false;
+    const id=(ex.name||'').replace(/[^a-zA-Z0-9 ]/g,'').substring(0,55);
+    return data[id]&&data[id].some(s=>s.date>=start&&s.date<=end);
   });
 }
 
 function applyDayCardStatus(gridId){
-  const grid = document.getElementById(gridId);
-  if(!grid) return;
-  const todayIdx = getTodayDayIdx();
-  const cards = grid.querySelectorAll('.day-card');
-
-  cards.forEach(card => {
-    const dayIdx = parseInt(card.dataset.dayIdx);
-    const phaseKey = card.dataset.phaseKey;
-    if(isNaN(dayIdx) || !phaseKey) return;
-
-    // Remove any existing overlay
-    const existing = card.querySelector('.day-card-overlay');
-    if(existing) existing.remove();
+  const grid=document.getElementById(gridId); if(!grid) return;
+  const todayIdx=getTodayDayIdx();
+  grid.querySelectorAll('.day-card').forEach(card=>{
+    const dayIdx=parseInt(card.dataset.dayIdx), phaseKey=card.dataset.phaseKey;
+    if(isNaN(dayIdx)||!phaseKey) return;
+    const ex=card.querySelector('.day-card-overlay'); if(ex) ex.remove();
     card.classList.remove('is-today');
-
-    // Is this today's training day?
-    const isToday = (dayIdx === todayIdx);
-    if(isToday) card.classList.add('is-today');
-
-    // Check the expected date for this day of week
-    const expectedDate = getExpectedDateForDayIdx(dayIdx);
-    const wasLogged = wasWorkoutLoggedOnDate(phaseKey, dayIdx, expectedDate);
-
-    // Only show done/missed overlay for past days (not today, not future)
-    const isPast = dayIdx < todayIdx;
-    const isFuture = dayIdx > todayIdx;
-
-    if(wasLogged){
-      // Done — green overlay with checkmark (show for any logged day incl. today)
-      const overlay = document.createElement('div');
-      overlay.className = 'day-card-overlay done';
-      overlay.innerHTML = '<span class="overlay-icon">✅</span>';
-      card.appendChild(overlay);
-    } else if(isPast){
-      // Missed — red overlay with X (only past unlogged days)
-      const overlay = document.createElement('div');
-      overlay.className = 'day-card-overlay missed';
-      overlay.innerHTML = '<span class="overlay-icon">❌</span>';
-      card.appendChild(overlay);
+    if(dayIdx===todayIdx) card.classList.add('is-today');
+    if(wasWorkoutLoggedThisWeek(phaseKey,dayIdx)){
+      const ov=document.createElement('div');
+      ov.className='day-card-overlay done';
+      ov.innerHTML='<span class="overlay-icon">✅</span>';
+      card.appendChild(ov);
     }
-    // Future days and unlogged today get no overlay — just the green border if today
   });
 }
 
@@ -1464,127 +1426,162 @@ function parseRestToSecs(raw){
 
 // ══ TIMER ═════════════════════════════════════════════════════════════════
 
-let timerInterval=null,timerTotal=90,timerRemaining=90,timerRunning=false;
-const CIRC=2*Math.PI*60;
+// ── TIMER STATE ───────────────────────────────────────────────────────────
+let timerInterval = null;
+let timerTotal    = 90;
+let timerRemaining= 90;
+let timerRunning  = false;
+let timerEndTime  = null; // wall-clock ms when timer hits zero
+let lastBeepAt    = -1;   // prevent double-beep same second
+const CIRC = 2 * Math.PI * 60;
 
-// Shared AudioContext — reused across all beeps to avoid iOS limitations
-let _audioCtx=null;
+// ── AUDIO ─────────────────────────────────────────────────────────────────
+let _audioCtx = null;
 function getAudioCtx(){
-  if(!_audioCtx||_audioCtx.state==='closed'){
-    try{ _audioCtx=new(window.AudioContext||window.webkitAudioContext)(); }catch(e){}
+  if(!_audioCtx || _audioCtx.state === 'closed'){
+    try{ _audioCtx = new(window.AudioContext || window.webkitAudioContext)(); }catch(e){}
   }
-  if(_audioCtx&&_audioCtx.state==='suspended') _audioCtx.resume();
+  if(_audioCtx && _audioCtx.state === 'suspended') _audioCtx.resume().catch(()=>{});
   return _audioCtx;
 }
-// Resume AudioContext on ANY touch/click — iOS suspends it when app goes to background
-document.addEventListener('touchstart', ()=>{ getAudioCtx(); }, { passive:true, capture:true });
-document.addEventListener('click',      ()=>{ getAudioCtx(); }, { passive:true, capture:true });
+['touchstart','touchend','pointerdown','click'].forEach(ev=>{
+  document.addEventListener(ev, ()=>{
+    if(_audioCtx && _audioCtx.state === 'suspended') _audioCtx.resume().catch(()=>{});
+    else if(!_audioCtx) getAudioCtx();
+  }, {passive:true, capture:true});
+});
 
 function beep(freq, duration, gain, delay){
-  const ctx=getAudioCtx(); if(!ctx) return;
+  const ctx = getAudioCtx(); if(!ctx) return;
   try{
-    const o=ctx.createOscillator(), g=ctx.createGain();
+    const o = ctx.createOscillator(), g = ctx.createGain();
     o.connect(g); g.connect(ctx.destination);
-    o.frequency.value=freq; o.type='sine';
-    const t=ctx.currentTime+delay;
-    g.gain.setValueAtTime(0,t);
-    g.gain.linearRampToValueAtTime(gain,t+0.01);
-    g.gain.setValueAtTime(gain,t+duration-0.05);
-    g.gain.linearRampToValueAtTime(0,t+duration);
-    o.start(t); o.stop(t+duration);
+    o.frequency.value = freq; o.type = 'sine';
+    const t = ctx.currentTime + (delay||0);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(gain, t + 0.01);
+    g.gain.setValueAtTime(gain, t + duration - 0.04);
+    g.gain.linearRampToValueAtTime(0, t + duration);
+    o.start(t); o.stop(t + duration + 0.05);
   }catch(e){}
 }
-
-function playCountdownBeep(secondsLeft){
-  if(secondsLeft<=0) return;
-  // Short high tick at 5,4,3,2,1
-  beep(880, 0.08, 0.25, 0);
-}
-
+function playCountdownBeep(){ beep(1000, 0.07, 0.3, 0); }
 function playFinishSound(){
-  // Longer lower tone + ascending finish chord
-  beep(440, 0.18, 0.35, 0.00);
-  beep(554, 0.18, 0.35, 0.20);
-  beep(659, 0.40, 0.40, 0.40);
+  beep(440, 0.15, 0.4, 0.00);
+  beep(554, 0.15, 0.4, 0.18);
+  beep(880, 0.45, 0.45, 0.36);
 }
 
-function setPreset(secs,el){
-  clearInterval(timerInterval);timerRunning=false;timerTotal=secs;timerRemaining=secs;
-  document.getElementById('timer-play-btn').textContent='START';
-  document.getElementById('timer-done-msg').classList.remove('show');
-  document.querySelectorAll('.preset-btn').forEach(b=>b.classList.remove('active-preset'));
-  if(el)el.classList.add('active-preset');
-  updateTimerDisplay();
-}
+// ── DISPLAY ───────────────────────────────────────────────────────────────
 function updateTimerDisplay(){
-  const m=Math.floor(timerRemaining/60),s=timerRemaining%60;
-  const d=document.getElementById('timer-display');
-  d.textContent=`${m}:${s.toString().padStart(2,'0')}`;
-  d.className=timerRemaining<=5?(timerRemaining===0?'done-color':'warn'):'';
-  const pct=timerTotal>0?timerRemaining/timerTotal:0;
-  const ring=document.getElementById('timer-ring-fg');
-  ring.style.strokeDashoffset=CIRC*(1-pct);
-  ring.style.stroke=timerRemaining<=5?'var(--accent2)':'var(--accent)';
+  const rem = Math.max(0, timerRemaining);
+  const m = Math.floor(rem/60), s = rem%60;
+  const d = document.getElementById('timer-display'); if(!d) return;
+  d.textContent = m+':'+s.toString().padStart(2,'0');
+  d.className = rem<=5 ? (rem===0?'done-color':'warn') : '';
+  const pct = timerTotal>0 ? rem/timerTotal : 0;
+  const ring = document.getElementById('timer-ring-fg'); if(!ring) return;
+  ring.style.strokeDashoffset = CIRC*(1-pct);
+  ring.style.stroke = rem<=5 ? 'var(--accent2)' : 'var(--accent)';
 }
-function toggleTimer(){
-  if(timerRemaining===0){resetTimer();return;}
-  if(timerRunning){
-    clearInterval(timerInterval);timerRunning=false;
-    document.getElementById('timer-play-btn').textContent='RESUME';
-  } else {
-    // Unlock AudioContext on user gesture before timer starts
-    timerRunning=true;
-    document.getElementById('timer-play-btn').textContent='PAUSE';
-    document.getElementById('timer-done-msg').classList.remove('show');
-    timerInterval=setInterval(()=>{
-      timerRemaining--;
-      updateTimerDisplay();
-      // Countdown beeps at 5,4,3,2,1
-      if(timerRemaining>=1 && timerRemaining<=5){
-        playCountdownBeep(timerRemaining);
-      }
-      if(timerRemaining<=0){
-        clearInterval(timerInterval);timerRunning=false;
-        document.getElementById('timer-display').className='done-color';
-        document.getElementById('timer-done-msg').classList.add('show');
-        playFinishSound();
-        haptic('success');
-        // Auto-close after finish sound plays (0.9s)
-        setTimeout(()=>closeTimer(), 900);
-      }
-    },1000);
+
+// ── TICK (wall-clock based — immune to backgrounding) ─────────────────────
+function timerTick(){
+  if(!timerRunning || !timerEndTime) return;
+  const secsLeft = Math.max(0, Math.ceil((timerEndTime - Date.now())/1000));
+  timerRemaining = secsLeft;
+  updateTimerDisplay();
+  if(secsLeft>=1 && secsLeft<=5 && secsLeft!==lastBeepAt){
+    lastBeepAt = secsLeft;
+    playCountdownBeep();
+  }
+  if(secsLeft<=0){
+    clearInterval(timerInterval); timerRunning=false;
+    const d=document.getElementById('timer-display'); if(d) d.className='done-color';
+    const msg=document.getElementById('timer-done-msg'); if(msg) msg.classList.add('show');
+    playFinishSound();
+    if(typeof haptic==='function') haptic('success');
+    setTimeout(()=>closeTimer(), 900);
   }
 }
-function resetTimer(){
-  clearInterval(timerInterval);timerRunning=false;timerRemaining=timerTotal;
-  document.getElementById('timer-play-btn').textContent='START';
-  document.getElementById('timer-done-msg').classList.remove('show');
+
+// ── CONTROLS ──────────────────────────────────────────────────────────────
+function setPreset(secs,el){
+  clearInterval(timerInterval); timerRunning=false; timerEndTime=null; lastBeepAt=-1;
+  timerTotal=secs; timerRemaining=secs;
+  const pb=document.getElementById('timer-play-btn'); if(pb) pb.textContent='START';
+  const msg=document.getElementById('timer-done-msg'); if(msg) msg.classList.remove('show');
+  document.querySelectorAll('.preset-btn').forEach(b=>b.classList.remove('active-preset'));
+  if(el) el.classList.add('active-preset');
   updateTimerDisplay();
 }
+
+function toggleTimer(){
+  if(timerRemaining<=0){ resetTimer(); return; }
+  const pb=document.getElementById('timer-play-btn');
+  const msg=document.getElementById('timer-done-msg');
+  if(timerRunning){
+    clearInterval(timerInterval); timerRunning=false; timerEndTime=null;
+    if(pb) pb.textContent='RESUME';
+  } else {
+    getAudioCtx(); // ensure unlocked on this gesture
+    timerRunning=true;
+    timerEndTime=Date.now()+timerRemaining*1000;
+    lastBeepAt=-1;
+    if(pb) pb.textContent='PAUSE';
+    if(msg) msg.classList.remove('show');
+    timerInterval=setInterval(timerTick, 250); // 250ms for smooth display
+  }
+}
+
+function resetTimer(){
+  clearInterval(timerInterval); timerRunning=false; timerEndTime=null; lastBeepAt=-1;
+  timerRemaining=timerTotal;
+  const pb=document.getElementById('timer-play-btn'); if(pb) pb.textContent='START';
+  const msg=document.getElementById('timer-done-msg'); if(msg) msg.classList.remove('show');
+  updateTimerDisplay();
+}
+
+function adjustTimer(deltaSecs){
+  timerRemaining=Math.max(1, timerRemaining+deltaSecs);
+  if(deltaSecs>0) timerTotal=Math.max(timerTotal, timerRemaining);
+  if(timerRunning && timerEndTime) timerEndTime=Date.now()+timerRemaining*1000;
+  updateTimerDisplay();
+}
+
 function openTimer(secs,label,autoStart){
-  clearInterval(timerInterval);timerRunning=false;timerTotal=secs||90;timerRemaining=timerTotal;
-  document.getElementById('timer-play-btn').textContent='START';
-  document.getElementById('timer-done-msg').classList.remove('show');
-  document.getElementById('timer-ex-label').textContent=label||'—';
+  clearInterval(timerInterval); timerRunning=false; timerEndTime=null; lastBeepAt=-1;
+  timerTotal=secs||90; timerRemaining=timerTotal;
+  const pb=document.getElementById('timer-play-btn'); if(pb) pb.textContent='START';
+  const msg=document.getElementById('timer-done-msg'); if(msg) msg.classList.remove('show');
+  const lbl=document.getElementById('timer-ex-label'); if(lbl) lbl.textContent=label||'—';
   document.querySelectorAll('.preset-btn').forEach(b=>b.classList.remove('active-preset'));
   updateTimerDisplay();
   document.getElementById('timer-overlay').classList.add('show');
-  // Reset viewport zoom (in case iOS zoomed in on an input before the timer opened)
   resetZoom();
-  if(autoStart) setTimeout(()=>toggleTimer(),120);
+  if(autoStart) setTimeout(()=>toggleTimer(), 120);
 }
+
 function closeTimer(){
-  clearInterval(timerInterval);timerRunning=false;
+  clearInterval(timerInterval); timerRunning=false; timerEndTime=null;
   document.getElementById('timer-overlay').classList.remove('show');
 }
+
 function resetZoom(){
-  // Forces iOS to reset any auto-zoom caused by number inputs
-  const meta=document.querySelector('meta[name="viewport"]');
-  if(!meta) return;
+  const meta=document.querySelector('meta[name="viewport"]'); if(!meta) return;
   const orig=meta.content;
   meta.content='width=device-width, initial-scale=1.0, maximum-scale=1.0';
   setTimeout(()=>{ meta.content=orig; },100);
 }
+
+// Recalc timer when returning from background
+document.addEventListener('visibilitychange',()=>{
+  if(!document.hidden && timerRunning && timerEndTime){
+    timerTick();
+    if(_audioCtx && _audioCtx.state==='suspended') _audioCtx.resume().catch(()=>{});
+  }
+});
+
 document.getElementById('timer-overlay').addEventListener('click',function(e){if(e.target===this)closeTimer();});
 
 // ══ PROGRESS / STATS ══════════════════════════════════════════════════════
@@ -1933,11 +1930,48 @@ function exportCSV(){
 }
 
 // ── SYNC ALL TO SHEETS ────────────────────────────────────────────────────
+function getPhaseFromDate(dateStr){
+  // Program started May 2025
+  // Phase 1: Wk 1–16 (May–Aug 2025)
+  // Phase 2: Wk 17–34 (Sep–Dec 2025)
+  // Phase 3: Wk 35–52 (Jan–Apr 2026)
+  if(!dateStr) return '';
+  const d = new Date(dateStr);
+  const y = d.getFullYear(), m = d.getMonth()+1; // 1-12
+  if(y === 2025){
+    if(m >= 5 && m <= 8)  return 'Phase 1 — Cut (May–Aug)';
+    if(m >= 9 && m <= 12) return 'Phase 2 — Lean Bulk (Sep–Dec)';
+  }
+  if(y === 2026){
+    if(m >= 1 && m <= 4)  return 'Phase 3 — Recomp (Jan–Apr)';
+  }
+  return '';
+}
+
+function getDayFromExercise(exId){
+  // Search all WORKOUTS to find which day this exercise belongs to
+  const exLower = exId.toLowerCase();
+  for(const [phaseKey, days] of Object.entries(WORKOUTS)){
+    if(!Array.isArray(days)) continue;
+    for(const day of days){
+      const exercises = day.exercises || [];
+      for(const ex of exercises){
+        if(ex.type === 'ss' || ex.type === 'note') continue;
+        const name = (ex.name||'').replace(/[^a-zA-Z0-9 ]/g,'').substring(0,55).toLowerCase();
+        if(name && exLower.includes(name.substring(0,20)) || name.includes(exLower.substring(0,20))){
+          return day.title || '';
+        }
+      }
+    }
+  }
+  return '';
+}
+
 async function syncAllToSheets(){
   const url = getSheetsURL();
   const btn = document.getElementById('sync-all-btn');
   if(!url){
-    showSyncToast('No Sheets URL configured — open ⚙ Sheets to set it up','var(--accent2)');
+    showSyncToast('No Sheets URL configured — tap the Sheets dot to set it up','var(--accent2)');
     return;
   }
   const data = getData();
@@ -1947,20 +1981,22 @@ async function syncAllToSheets(){
     return;
   }
 
-  // Show progress on button
   if(btn){ btn.textContent='Syncing...'; btn.style.opacity='0.6'; btn.disabled=true; }
   updateSyncDot('syncing');
 
   let sent=0, failed=0;
-  const total = entries.reduce((a,[,sessions])=>a+sessions.length,0);
 
   for(const [exId, sessions] of entries){
+    // Derive day label from exercise name once per exercise
+    const dayLabel = getDayFromExercise(exId);
+
     for(const session of sessions){
+      const phase = getPhaseFromDate(session.date);
       const payload = {
         exercise: exId,
         date:     session.date,
-        phase:    '',
-        day:      '',
+        phase:    phase,
+        day:      dayLabel,
         sets:     session.sets.map(s=>({
           set:    Number(s.set),
           weight: String(s.weight),
@@ -1971,12 +2007,10 @@ async function syncAllToSheets(){
       const res = await syncToSheets(payload, true);
       if(res !== null) sent++;
       else failed++;
-      // Small delay between requests to avoid overwhelming Apps Script
       await new Promise(r=>setTimeout(r,150));
     }
   }
 
-  // Restore button
   if(btn){ btn.textContent='☁ Sync All to Sheets'; btn.style.opacity='1'; btn.disabled=false; }
 
   if(failed === 0){
