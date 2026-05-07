@@ -1134,6 +1134,11 @@ function getThisWeekDateRange(){
 }
 
 function wasWorkoutLoggedThisWeek(phaseKey, dayIdx){
+  // Only show green for the phase the user is currently viewing
+  // Derive which phase number this phaseKey belongs to
+  const phaseNum = phaseKey.startsWith('p2') ? 2 : phaseKey.startsWith('p3') ? 3 : 1;
+  if(phaseNum !== currentPhase) return false;
+
   const data=getData(), {start,end}=getThisWeekDateRange();
   let exs=[];
   if(phaseKey==='p3-gym'||phaseKey==='p3-home'){
