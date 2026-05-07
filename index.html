@@ -2191,6 +2191,9 @@ function switchPhase(n){
     populateP3Grid('grid-p3-gym',false,'p3-gym');
     populateP3Grid('grid-p3-home',true,'p3-home');
   }
+  // Re-apply card status now that currentPhase is updated
+  // (populateGrid only runs once due to built flag, so status needs explicit refresh)
+  setTimeout(()=>refreshAllCardStatus(), 60);
   // sync nutrition tab phase
   const nutBtns={'1':'nut-p1-btn','2':'nut-p2-btn','3':'nut-p3-btn'};
   const nutPhases={'1':'p1','2':'p2','3':'p3'};
