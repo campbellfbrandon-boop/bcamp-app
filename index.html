@@ -277,6 +277,10 @@ canvas{display:block;width:100%!important;}
 <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Cache</div>
 <button class="btn btn-o btn-sm btn-fw" onclick="hardClearCache()">Force Clear Cache &amp; Reload</button>
 </div>
+<div style="display:flex;gap:7px;margin-bottom:10px;">
+  <button class="btn btn-o f1" id="sync-all-btn" onclick="syncAllToSheets()">&#9729; Sync All to Sheets</button>
+  <button class="btn btn-o f1" onclick="restoreFromSheets()">&#9047; Restore from Sheets</button>
+</div>
 <button class="btn btn-gh btn-fw" onclick="closeMo('sheets-mo')">Close</button>
 </div></div>
 
@@ -410,59 +414,329 @@ function today(){return dateKey();}
 
 // ── CATALOG ───────────────────────────────────────────────────────────────
 const BUILTIN=[
-  {id:'bb-bench',name:'Barbell Bench Press',icon:'🏋',muscles:['Chest','Triceps','Shoulders'],equipment:['Barbell'],func:['Push','Compound'],desc:'Primary horizontal push. Drive shoulder blades in. Bar to lower chest. Full ROM.'},
-  {id:'db-bench',name:'Dumbbell Bench Press',icon:'🏋',muscles:['Chest','Triceps','Shoulders'],equipment:['Dumbbells'],func:['Push','Compound'],desc:'Greater ROM than barbell. Full stretch at bottom.'},
-  {id:'inc-bb-bench',name:'Incline Barbell Bench Press',icon:'🏋',muscles:['Chest','Shoulders'],equipment:['Barbell'],func:['Push','Compound'],desc:'30-45 degree incline. Upper pec and anterior delt emphasis.'},
-  {id:'inc-db-bench',name:'Incline Dumbbell Press',icon:'🏋',muscles:['Chest','Shoulders'],equipment:['Dumbbells'],func:['Push','Compound'],desc:'Full stretch at bottom. Squeeze at top. Upper chest priority.'},
-  {id:'dec-db-bench',name:'Decline Dumbbell Press',icon:'🏋',muscles:['Chest','Triceps'],equipment:['Dumbbells'],func:['Push','Compound'],desc:'Lower chest and serratus activation.'},
-  {id:'cable-fly',name:'Cable Chest Fly',icon:'🔄',muscles:['Chest'],equipment:['Cable'],func:['Push','Isolation'],desc:'Constant tension throughout ROM. Stretch and squeeze.'},
-  {id:'db-fly',name:'Dumbbell Fly',icon:'🏋',muscles:['Chest'],equipment:['Dumbbells'],func:['Push','Isolation'],desc:'Slow eccentric. Big stretch.'},
-  {id:'cg-bench',name:'Close-Grip Bench Press',icon:'🏋',muscles:['Triceps','Chest'],equipment:['Barbell'],func:['Push','Compound'],desc:'Hands shoulder-width. Tricep and lower chest compound.'},
-  {id:'bb-ohp',name:'Barbell Overhead Press',icon:'🏋',muscles:['Shoulders','Triceps'],equipment:['Barbell'],func:['Push','Compound'],desc:'Standing. Full body tension. Drive head through at lockout.'},
-  {id:'db-ohp',name:'Dumbbell Overhead Press',icon:'🏋',muscles:['Shoulders','Triceps'],equipment:['Dumbbells'],func:['Push','Compound'],desc:'Seated or standing. Greater stability demand than barbell.'},
-  {id:'arnold-press',name:'Arnold Press',icon:'🏋',muscles:['Shoulders'],equipment:['Dumbbells'],func:['Push','Compound'],desc:'Full rotation each rep. Hits all three delt heads. Slow eccentric.'},
-  {id:'lat-raise-db',name:'Lateral Raise (Dumbbell)',icon:'🏋',muscles:['Shoulders'],equipment:['Dumbbells'],func:['Isolation'],desc:'Lead with elbows. Stop at shoulder height. No momentum.'},
-  {id:'lat-raise-cable',name:'Lateral Raise (Cable)',icon:'🔄',muscles:['Shoulders'],equipment:['Cable'],func:['Isolation'],desc:'Constant tension. Slight lean away. Superior to DB for stimulus.'},
-  {id:'face-pull',name:'Face Pull',icon:'🔄',muscles:['Shoulders','Back'],equipment:['Cable'],func:['Pull','Isolation'],desc:'Pull to forehead. Elbows high. External rotation at end.'},
-  {id:'rear-delt-fly',name:'Rear Delt Fly',icon:'🏋',muscles:['Shoulders','Back'],equipment:['Dumbbells'],func:['Pull','Isolation'],desc:'Elbows at shoulder height. Lead with elbows.'},
-  {id:'db-shrug',name:'Dumbbell Shrug',icon:'🏋',muscles:['Traps'],equipment:['Dumbbells'],func:['Isolation'],desc:'Full ROM. Straight up and down. No rolling. 1s hold at top.'},
-  {id:'deadlift',name:'Conventional Deadlift',icon:'🏋',muscles:['Back','Hamstrings','Glutes'],equipment:['Barbell'],func:['Pull','Compound'],desc:'Hip hinge. Bar over mid-foot. Lat engagement before pull. Drive floor away.'},
-  {id:'bb-row',name:'Barbell Bent-Over Row',icon:'🏋',muscles:['Back','Biceps'],equipment:['Barbell'],func:['Pull','Compound'],desc:'Overhand. 45 degree torso. Pull to lower chest. Back thickness.'},
-  {id:'db-row',name:'Single-Arm Dumbbell Row',icon:'🏋',muscles:['Back','Biceps'],equipment:['Dumbbells'],func:['Pull','Compound'],desc:'Full lat stretch at bottom. Elbow to hip. Heavy.'},
-  {id:'cable-row',name:'Seated Cable Row',icon:'🔄',muscles:['Back','Biceps'],equipment:['Cable'],func:['Pull','Compound'],desc:'Sit tall. Drive elbows back. Squeeze mid-back. 2s hold.'},
-  {id:'lat-pulldown',name:'Lat Pulldown',icon:'🔄',muscles:['Back','Biceps'],equipment:['Cable','Machine'],func:['Pull','Compound'],desc:'Full arm extension at top. Drive elbows to hips. Lat width.'},
-  {id:'pullup',name:'Pull-Up',icon:'🤸',muscles:['Back','Biceps'],equipment:['Bodyweight'],func:['Pull','Compound'],desc:'Full dead hang. Drive elbows to hips. Chin cleanly over bar.'},
-  {id:'weighted-pullup',name:'Weighted Pull-Up',icon:'🤸',muscles:['Back','Biceps'],equipment:['Bodyweight'],func:['Pull','Compound'],desc:'Belt weight. Full dead hang. Primary lat width driver.'},
-  {id:'tbar-row',name:'T-Bar Row',icon:'🏋',muscles:['Back'],equipment:['Barbell'],func:['Pull','Compound'],desc:'Chest-supported preferred. Pull to sternum. Mid-back mass.'},
-  {id:'rack-pull',name:'Rack Pull',icon:'🏋',muscles:['Back','Traps'],equipment:['Barbell'],func:['Pull','Compound'],desc:'Just below knee. Upper back thickness. Heavier than deadlift.'},
-  {id:'bb-curl',name:'Barbell Curl',icon:'🏋',muscles:['Biceps'],equipment:['Barbell'],func:['Pull','Isolation'],desc:'Strength base. Full supination at top.'},
-  {id:'db-curl',name:'Dumbbell Curl',icon:'🏋',muscles:['Biceps'],equipment:['Dumbbells'],func:['Pull','Isolation'],desc:'Supinate hard at top. No swing. Strict form.'},
-  {id:'hammer-curl',name:'Hammer Curl',icon:'🏋',muscles:['Biceps','Forearms'],equipment:['Dumbbells'],func:['Pull','Isolation'],desc:'Neutral grip. Brachialis emphasis. No body english.'},
-  {id:'inc-db-curl',name:'Incline Dumbbell Curl',icon:'🏋',muscles:['Biceps'],equipment:['Dumbbells'],func:['Pull','Isolation'],desc:'Best long-head stretch. Arms fully hanging. Go slow.'},
-  {id:'preacher-curl',name:'Preacher Curl',icon:'🏋',muscles:['Biceps'],equipment:['Barbell','Machine'],func:['Pull','Isolation'],desc:'Peak contraction focus. No momentum possible.'},
-  {id:'cable-curl',name:'Cable Curl',icon:'🔄',muscles:['Biceps'],equipment:['Cable'],func:['Pull','Isolation'],desc:'Constant tension. High peak contraction.'},
-  {id:'skullcrusher',name:'Skullcrusher',icon:'🏋',muscles:['Triceps'],equipment:['Barbell'],func:['Push','Isolation'],desc:'3-second eccentric. Elbows locked in. Long head mass builder.'},
-  {id:'tricep-pushdown',name:'Tricep Pushdown',icon:'🔄',muscles:['Triceps'],equipment:['Cable'],func:['Push','Isolation'],desc:'Spread rope at bottom. Lock elbows at sides. Full extension.'},
-  {id:'oh-tricep-ext',name:'Overhead Tricep Extension',icon:'🏋',muscles:['Triceps'],equipment:['Dumbbells','Cable'],func:['Push','Isolation'],desc:'Long head emphasis. Elbows by ears. Full stretch overhead.'},
-  {id:'tricep-dip',name:'Tricep Dip',icon:'🤸',muscles:['Triceps','Chest'],equipment:['Bodyweight'],func:['Push','Compound'],desc:'Add belt weight. Slight forward lean. Full ROM at bottom.'},
-  {id:'bb-squat',name:'Barbell Back Squat',icon:'🏋',muscles:['Quads','Glutes','Hamstrings'],equipment:['Barbell'],func:['Push','Compound'],desc:'Hip crease below parallel. Brace hard. Drive knees out.'},
-  {id:'leg-press',name:'Leg Press',icon:'⚙',muscles:['Quads','Glutes'],equipment:['Machine'],func:['Push','Compound'],desc:'High foot placement for quad sweep. Full ROM.'},
-  {id:'leg-ext',name:'Leg Extension',icon:'⚙',muscles:['Quads'],equipment:['Machine'],func:['Isolation'],desc:'Peak contraction hold 1s. Full stretch at bottom.'},
-  {id:'bss',name:'Bulgarian Split Squat',icon:'🏋',muscles:['Quads','Glutes'],equipment:['Dumbbells','Barbell'],func:['Push','Compound'],desc:'Rear foot elevated. Forward lean for glute bias.'},
-  {id:'walking-lunge',name:'Walking Lunge',icon:'🏋',muscles:['Quads','Glutes','Hamstrings'],equipment:['Dumbbells'],func:['Push','Compound'],desc:'Long stride for glute bias. Torso upright.'},
-  {id:'rdl',name:'Romanian Deadlift',icon:'🏋',muscles:['Hamstrings','Glutes'],equipment:['Barbell'],func:['Pull','Compound'],desc:'Hip hinge. Soft knees. Feel the hamstring stretch.'},
-  {id:'db-rdl',name:'Dumbbell RDL',icon:'🏋',muscles:['Hamstrings','Glutes'],equipment:['Dumbbells'],func:['Pull','Compound'],desc:'Same as BB RDL. 4s eccentric for max stimulus.'},
-  {id:'leg-curl-lying',name:'Lying Leg Curl',icon:'⚙',muscles:['Hamstrings'],equipment:['Machine'],func:['Isolation'],desc:'3-second eccentric. Full stretch.'},
-  {id:'leg-curl-seated',name:'Seated Leg Curl',icon:'⚙',muscles:['Hamstrings'],equipment:['Machine'],func:['Isolation'],desc:'Different angle to lying. Different hamstring stimulus.'},
-  {id:'nordic-curl',name:'Nordic Hamstring Curl',icon:'🤸',muscles:['Hamstrings'],equipment:['Bodyweight'],func:['Isolation'],desc:'Highest hamstring eccentric load. Lower as slowly as possible.'},
-  {id:'hip-thrust',name:'Barbell Hip Thrust',icon:'🏋',muscles:['Glutes'],equipment:['Barbell'],func:['Push','Compound'],desc:'Upper back on bench. 1s pause at top. SQUEEZE.'},
-  {id:'glute-kickback',name:'Cable Glute Kickback',icon:'🔄',muscles:['Glutes'],equipment:['Cable'],func:['Isolation'],desc:'Drive heel back AND up. Squeeze at top. Slow eccentric.'},
-  {id:'good-morning',name:'Good Morning',icon:'🏋',muscles:['Hamstrings','Back'],equipment:['Barbell'],func:['Pull','Compound'],desc:'Spinal erectors and hamstrings. Light to moderate weight.'},
-  {id:'standing-calf',name:'Standing Calf Raise',icon:'🏋',muscles:['Calves'],equipment:['Barbell','Machine'],func:['Isolation'],desc:'Step on plate for full ROM. 2s up, 2s down.'},
-  {id:'seated-calf',name:'Seated Calf Raise',icon:'⚙',muscles:['Calves'],equipment:['Machine'],func:['Isolation'],desc:'Soleus target. Full ROM. Stretch is the growth signal.'},
-  {id:'hiit-bike',name:'HIIT Bike',icon:'🚴',muscles:['Cardio'],equipment:['Machine'],func:['Cardio'],desc:'30s all-out / 30s recovery. 10-15 min.'},
-  {id:'stairmaster',name:'Stairmaster',icon:'🪜',muscles:['Cardio','Glutes'],equipment:['Machine'],func:['Cardio'],desc:'Sustained high effort. Glute activation bonus.'},
-  {id:'liss-walk',name:'LISS Walk',icon:'🚶',muscles:['Cardio'],equipment:['Bodyweight'],func:['Cardio'],desc:'25-35 min low intensity. Recovery and fat oxidation.'},
+  // ── CHEST ──────────────────────────────────────────────────────────────
+  {id:'bb-bench',name:'Barbell Bench Press',icon:'🏋',muscles:['Chest','Triceps','Shoulders'],equipment:['Barbell'],func:['Push','Compound'],
+    desc:'The foundational horizontal push. Set up with feet flat, back arched naturally, shoulder blades pinched and depressed into the bench. Grip just outside shoulder width. Unrack, lower bar to lower chest in a slight arc, touch lightly, drive up explosively. Think "push the floor away" — full body tension throughout.'},
+  {id:'db-bench',name:'Dumbbell Bench Press',icon:'🏋',muscles:['Chest','Triceps','Shoulders'],equipment:['Dumbbells'],func:['Push','Compound'],
+    desc:'Greater ROM and unilateral stability demand vs barbell. Start with palms facing forward, elbows at ~75°. Lower until a deep stretch at the bottom, then drive and squeeze at the top. Each side works independently — great for identifying and correcting imbalances.'},
+  {id:'inc-bb-bench',name:'Incline Barbell Bench Press',icon:'🏋',muscles:['Chest','Shoulders'],equipment:['Barbell'],func:['Push','Compound'],
+    desc:'30–45° incline bench. Shifts emphasis to upper pec and anterior delt. Bar path is more vertical. Keep shoulder blades retracted and depressed — at steep inclines it is easy to lose tightness and turn this into a shoulder press. Touch the bar at upper chest.'},
+  {id:'inc-db-bench',name:'Incline Dumbbell Press',icon:'🏋',muscles:['Chest','Shoulders'],equipment:['Dumbbells'],func:['Push','Compound'],
+    desc:'Upper chest priority. Use 30–45° incline. Allow a full stretch at the bottom with a slight pause — this is where the growth signal comes from. Squeeze hard at top without fully locking out. Slightly neutral grip (palms slightly facing each other) reduces shoulder strain.'},
+  {id:'dec-db-bench',name:'Decline Dumbbell Press',icon:'🏋',muscles:['Chest','Triceps'],equipment:['Dumbbells'],func:['Push','Compound'],
+    desc:'Lower chest and serratus emphasis. Keep feet secured on the pad. The decline angle allows heavy loads with less shoulder involvement. Full ROM — let the dumbbells travel wide at the bottom for a complete stretch.'},
+  {id:'cable-fly',name:'Cable Chest Fly',icon:'🔄',muscles:['Chest'],equipment:['Cable'],func:['Push','Isolation'],
+    desc:'Set cables at chest height or slightly above. Step forward, slight forward lean, soft elbow bend maintained throughout. Think of hugging a barrel — the arc should be smooth, not a press. Constant cable tension through the full ROM is the advantage over dumbbells. Pause and squeeze hard at the center.'},
+  {id:'cable-fly-low',name:'Low Cable Fly',icon:'🔄',muscles:['Chest'],equipment:['Cable'],func:['Push','Isolation'],
+    desc:'Cables set at the lowest position, pulling upward and across the body. Emphasizes the upper pec. Great finishing movement. Squeeze hard at the top of the arc, slow eccentric.'},
+  {id:'cable-fly-high',name:'High Cable Fly',icon:'🔄',muscles:['Chest'],equipment:['Cable'],func:['Push','Isolation'],
+    desc:'Cables set high, pulling down and across. Emphasizes the lower and outer pec fibers. Hold the contracted position for 1–2s.'},
+  {id:'pec-deck',name:'Pec Deck Machine',icon:'⚙',muscles:['Chest'],equipment:['Machine'],func:['Push','Isolation'],
+    desc:'Machine fly. Arms stay at a fixed angle throughout, removing the need to stabilize. Allows full focus on the pec contraction. Adjust the seat so the handles are at mid-chest height. Squeeze hard at the midpoint and control the eccentric.'},
+  {id:'chest-press-machine',name:'Machine Chest Press',icon:'⚙',muscles:['Chest','Triceps','Shoulders'],equipment:['Machine'],func:['Push','Compound'],
+    desc:'Selectorized or plate-loaded. More stable than barbell, great for high-rep sets or when fatigued. Keep shoulder blades retracted throughout. Drive through the handles, full extension without locking joints. Control the return.'},
+  {id:'db-fly',name:'Dumbbell Fly',icon:'🏋',muscles:['Chest'],equipment:['Dumbbells'],func:['Push','Isolation'],
+    desc:'Lie flat, dumbbells directly over chest, slight elbow bend. Arc the dumbbells wide and down until a deep stretch, then arc back up. This is a stretch-focused isolation — do NOT use heavy weight. 3-second eccentric is ideal.'},
+  {id:'cg-bench',name:'Close-Grip Bench Press',icon:'🏋',muscles:['Triceps','Chest'],equipment:['Barbell'],func:['Push','Compound'],
+    desc:'Hands shoulder-width or slightly narrower. Elbows tucked close to the body throughout. Lowers to lower chest. Primary tricep mass builder that also hits the inner and lower chest. Keep the arch and drive hard off the chest.'},
+  {id:'pushup',name:'Push-Up',icon:'🤸',muscles:['Chest','Triceps','Shoulders'],equipment:['Bodyweight'],func:['Push','Compound'],
+    desc:'Hands slightly outside shoulder width, body in a rigid plank. Elbows at ~45° to the torso. Lower until chest nearly touches the floor, explode up. Elevate feet to bias upper chest. Add a weight vest or have someone place plates on your back for progressive overload.'},
+  // ── SHOULDERS ──────────────────────────────────────────────────────────
+  {id:'bb-ohp',name:'Barbell Overhead Press',icon:'🏋',muscles:['Shoulders','Triceps'],equipment:['Barbell'],func:['Push','Compound'],
+    desc:'Standing overhead press is a full-body movement requiring serious core and glute bracing. Grip just outside shoulder width. Press from the front rack position, bar at upper chest/collarbone. Drive the bar straight up and slightly back, pushing your head through the "window" at lockout. The entire body should be stiff as a plank.'},
+  {id:'db-ohp',name:'Dumbbell Overhead Press',icon:'🏋',muscles:['Shoulders','Triceps'],equipment:['Dumbbells'],func:['Push','Compound'],
+    desc:'Seated or standing. Start with dumbbells at shoulder height, palms forward or neutral. Press up and slightly in, coming to near-contact at the top. Greater stability demand than the barbell version. Seated removes the lower body and forces pure shoulder strength.'},
+  {id:'arnold-press',name:'Arnold Press',icon:'🏋',muscles:['Shoulders'],equipment:['Dumbbells'],func:['Push','Compound'],
+    desc:'Named after Arnold Schwarzenegger. Start with dumbbells at chin height, palms facing you (like the top of a curl). As you press, rotate the wrists outward so palms face forward at the top. Reverse on the way down. The rotation recruits all three delt heads through the full ROM. 3-second eccentric.'},
+  {id:'lat-raise-db',name:'Lateral Raise (Dumbbell)',icon:'🏋',muscles:['Shoulders'],equipment:['Dumbbells'],func:['Isolation'],
+    desc:'The primary side delt isolator. Lead with the elbows, not the wrists — think of pouring a pitcher of water at the top. Keep a very slight forward torso lean for better delt alignment. Stop at shoulder height. No momentum. 2-second eccentric. The medial delt responds well to high volume and moderate weight.'},
+  {id:'lat-raise-cable',name:'Lateral Raise (Cable)',icon:'🔄',muscles:['Shoulders'],equipment:['Cable'],func:['Isolation'],
+    desc:'Superior to dumbbell version because the cable provides constant tension even at the bottom of the ROM (dumbbells provide zero tension at the bottom). Set cable at the lowest position, slight lean away from the cable, single arm. Slow controlled rep — no momentum.'},
+  {id:'lat-raise-machine',name:'Lateral Raise Machine',icon:'⚙',muscles:['Shoulders'],equipment:['Machine'],func:['Isolation'],
+    desc:'Plate-loaded or selectorized. Eliminates the balance requirement, allowing complete focus on the medial delt. Great for drop sets and extended sets. Adjust seat to align the machine arm with your shoulder joint.'},
+  {id:'face-pull',name:'Face Pull',icon:'🔄',muscles:['Shoulders','Back'],equipment:['Cable'],func:['Pull','Isolation'],
+    desc:'Rope attachment at upper chest/forehead height. Pull the rope to your face with elbows high and flared — think of pulling apart the rope at your ears. The key movement is external rotation of the shoulder at the end position. Critical for shoulder health and posterior delt development. Never skip this.'},
+  {id:'rear-delt-fly',name:'Rear Delt Fly',icon:'🏋',muscles:['Shoulders','Back'],equipment:['Dumbbells'],func:['Pull','Isolation'],
+    desc:'Bent over with a flat back, elbows soft, lead with the elbows to bring the dumbbells up and slightly back. Think of squeezing a pencil between your shoulder blades at the top. Light weight, strict form. No swinging. Critical for balanced shoulder development and rotator cuff health.'},
+  {id:'rear-delt-cable',name:'Rear Delt Cable Pull',icon:'🔄',muscles:['Shoulders','Back'],equipment:['Cable'],func:['Pull','Isolation'],
+    desc:'Cross-body cable rear delt raise. Cable set high, pull across the body with a straight arm. Constant tension version of the rear delt fly. Great for finisher sets with constant tension.'},
+  {id:'db-shrug',name:'Dumbbell Shrug',icon:'🏋',muscles:['Traps'],equipment:['Dumbbells'],func:['Isolation'],
+    desc:'Hold heavy dumbbells at your sides. Elevate the shoulders straight up as high as possible — no forward or backward rolling. Hold the top position for 1 full second. Controlled descent. The traps respond well to heavy weight and moderate-to-high reps.'},
+  {id:'bb-shrug',name:'Barbell Shrug',icon:'🏋',muscles:['Traps'],equipment:['Barbell'],func:['Isolation'],
+    desc:'Barbell held in front. Heavier loading possible than dumbbells. Same execution — straight up, 1s hold, controlled down. Straps recommended at heavy weights so grip is not the limiting factor.'},
+  {id:'cable-upright-row',name:'Cable Upright Row',icon:'🔄',muscles:['Shoulders','Traps'],equipment:['Cable'],func:['Pull','Compound'],
+    desc:'Rope or bar attachment at the bottom. Pull straight up, leading with the elbows, until the handles reach chin height. Elbows should be at or above shoulder height at the top. Cable version is safer on the wrist and shoulder than barbell. Traps and lateral delts.'},
+  // ── BACK ───────────────────────────────────────────────────────────────
+  {id:'deadlift',name:'Conventional Deadlift',icon:'🏋',muscles:['Back','Hamstrings','Glutes'],equipment:['Barbell'],func:['Pull','Compound'],
+    desc:'Bar over mid-foot, hip-width stance. Hinge at the hips, grip the bar just outside the legs. Before pulling: big breath, brace the core, engage the lats by trying to bend the bar around your legs. Drive the floor away — do not yank the bar up. Maintain a neutral spine throughout. The deadlift is a hip hinge, not a squat.'},
+  {id:'sumo-deadlift',name:'Sumo Deadlift',icon:'🏋',muscles:['Back','Hamstrings','Glutes','Quads'],equipment:['Barbell'],func:['Pull','Compound'],
+    desc:'Wide stance with toes pointed out significantly. Hips sit lower, torso more upright, shorter bar path. Shifts emphasis to the hips and inner thighs vs conventional. Grip inside the legs. Same lat engagement and bracing principles apply.'},
+  {id:'bb-row',name:'Barbell Bent-Over Row',icon:'🏋',muscles:['Back','Biceps'],equipment:['Barbell'],func:['Pull','Compound'],
+    desc:'Overhand grip, torso at ~45°, bar just below the knee at the bottom. Pull bar to lower chest/upper abdomen, elbows drive back and slightly flared. Squeeze the mid-back at the top. This is a primary back thickness builder. Keep the lower back neutral — do not round under load.'},
+  {id:'db-row',name:'Single-Arm Dumbbell Row',icon:'🏋',muscles:['Back','Biceps'],equipment:['Dumbbells'],func:['Pull','Compound'],
+    desc:'Brace one hand and knee on a bench. Let the dumbbell hang with a fully extended arm at the bottom for a complete lat stretch. Drive the elbow to the hip — not up toward the ceiling. Think of pulling your elbow into your back pocket. Heavy is fine here. Go heavy.'},
+  {id:'cable-row',name:'Seated Cable Row',icon:'🔄',muscles:['Back','Biceps'],equipment:['Cable'],func:['Pull','Compound'],
+    desc:'Sit upright with a slight forward lean at the start. Pull the handle to the lower abdomen, driving elbows back, and sit tall as the weight comes in. Hold the contracted position for 2 seconds. Slow return to full arm extension for a complete lat stretch. A V-bar or neutral grip is easiest on the shoulders.'},
+  {id:'cable-row-wide',name:'Wide-Grip Cable Row',icon:'🔄',muscles:['Back'],equipment:['Cable'],func:['Pull','Compound'],
+    desc:'Wider bar attachment, elbows flare out more. Shifts emphasis from the lower lat to the mid and upper back, teres major, and rear delt. Pull to mid-chest. Great for back width and thickness combined.'},
+  {id:'lat-pulldown',name:'Lat Pulldown',icon:'🔄',muscles:['Back','Biceps'],equipment:['Cable','Machine'],func:['Pull','Compound'],
+    desc:'Pronated grip slightly outside shoulder width. Allow a full dead-hang extension at the top of each rep. Lean back slightly, drive the elbows down to the hips — think of putting your elbows in your back pockets. The bar should come to the upper chest. The lats control lat width.'},
+  {id:'lat-pulldown-neutral',name:'Neutral Grip Lat Pulldown',icon:'🔄',muscles:['Back','Biceps'],equipment:['Cable','Machine'],func:['Pull','Compound'],
+    desc:'Parallel handle attachment. Neutral (palms facing) grip reduces shoulder strain and allows many to use greater ROM. Lower-lat bias. Pull to upper chest. Great option if overhead pressing volume is high and shoulder is fatigued.'},
+  {id:'lat-pulldown-close',name:'Close-Grip Lat Pulldown',icon:'🔄',muscles:['Back','Biceps'],equipment:['Cable','Machine'],func:['Pull','Compound'],
+    desc:'V-bar or close neutral attachment. Elbows travel more forward than wide-grip. Heavy lower lat stimulus. Pull the bar all the way to the upper chest and really drive the elbows into the obliques.'},
+  {id:'pullup',name:'Pull-Up',icon:'🤸',muscles:['Back','Biceps'],equipment:['Bodyweight'],func:['Pull','Compound'],
+    desc:'Overhand grip, slightly outside shoulder width. Start from a dead hang — full arm extension. Drive elbows to hips while pulling chin above the bar. No kipping. Lower under control for the full eccentric benefit. The king of bodyweight back exercises.'},
+  {id:'weighted-pullup',name:'Weighted Pull-Up',icon:'🤸',muscles:['Back','Biceps'],equipment:['Bodyweight'],func:['Pull','Compound'],
+    desc:'Use a dip belt or hold a dumbbell between the feet or thighs. Same as bodyweight pull-up. Add weight progressively. One of the most reliable measures of relative upper body strength.'},
+  {id:'chinup',name:'Chin-Up',icon:'🤸',muscles:['Back','Biceps'],equipment:['Bodyweight'],func:['Pull','Compound'],
+    desc:'Underhand (supinated) grip at shoulder width. Greater bicep involvement than pull-ups. Slightly easier for most people. Start from a dead hang. Pull until chin clears the bar. Great superset with rows.'},
+  {id:'tbar-row',name:'T-Bar Row',icon:'🏋',muscles:['Back'],equipment:['Barbell'],func:['Pull','Compound'],
+    desc:'Chest-supported is preferred — removes lower back fatigue and allows heavier loading. Pull the handles to the lower sternum. The neutral grip allows heavy weight with less shoulder involvement. Primary mid-back thickness movement.'},
+  {id:'rack-pull',name:'Rack Pull',icon:'🏋',muscles:['Back','Traps'],equipment:['Barbell'],func:['Pull','Compound'],
+    desc:'Deadlift from pins set just below the knee. Eliminates the bottom of the pull, allowing significantly heavier loads. Emphasizes the upper back, traps, and lockout strength. Brace everything before each pull. Use straps to max out back stimulus.'},
+  {id:'meadows-row',name:'Meadows Row',icon:'🏋',muscles:['Back'],equipment:['Barbell'],func:['Pull','Compound'],
+    desc:'Landmine setup. Stand perpendicular to the bar, staggered stance. Pull the sleeve of the bar to your hip using one hand. The path of the bar creates a unique arc that hits the teres major and lat with extraordinary stretch. Created by John Meadows. One arm at a time, heavy weight.'},
+  {id:'straight-arm-pulldown',name:'Straight Arm Pulldown',icon:'🔄',muscles:['Back'],equipment:['Cable'],func:['Pull','Isolation'],
+    desc:'Cable set high, rope or bar attachment. Start with arms extended overhead, pull down in an arc until the attachment touches your thighs. Arms stay straight throughout — no elbow bend. Pure lat isolation. Great pre-exhaust or finisher. Squeeze the lats hard at the bottom.'},
+  {id:'cable-pullover',name:'Cable Pullover',icon:'🔄',muscles:['Back','Chest'],equipment:['Cable'],func:['Pull','Isolation'],
+    desc:'Facing away from a high cable, reach overhead to grab the rope. Pull the rope forward and down in an arc, keeping arms mostly straight. Lat and serratus activation. Can also be done with a single arm. Arnold Schwarzenegger swore by this.'},
+  {id:'machine-row',name:'Machine Chest-Supported Row',icon:'⚙',muscles:['Back','Biceps'],equipment:['Machine'],func:['Pull','Compound'],
+    desc:'Chest is braced against a pad, completely removing lower back involvement. This allows maximum focus on the mid and upper back. Drive elbows back, squeeze hard at the peak contraction. Great for high-rep pump work.'},
+  {id:'machine-pullover',name:'Nautilus Pullover Machine',icon:'⚙',muscles:['Back','Chest'],equipment:['Machine'],func:['Pull','Isolation'],
+    desc:'Sit upright, elbows on the pads. Drive the pads down and forward in an arc. The machine provides resistance through the full ROM that free weights cannot match at the top. Pure lat and serratus isolation.'},
+  // ── BICEPS ─────────────────────────────────────────────────────────────
+  {id:'bb-curl',name:'Barbell Curl',icon:'🏋',muscles:['Biceps'],equipment:['Barbell'],func:['Pull','Isolation'],
+    desc:'Straight bar or EZ bar. Stand upright, elbows fixed at the sides. Full supination at the top — wrists rotate outward as you reach peak contraction. Lower with a 2-second eccentric. No swinging. The strength standard for bicep development.'},
+  {id:'db-curl',name:'Dumbbell Curl',icon:'🏋',muscles:['Biceps'],equipment:['Dumbbells'],func:['Pull','Isolation'],
+    desc:'Supinate hard at the top of each rep — the bicep is a supinator as much as a flexor. Full extension at the bottom. Can be done alternating or simultaneously. No body english. Strict form.'},
+  {id:'hammer-curl',name:'Hammer Curl',icon:'🏋',muscles:['Biceps','Forearms'],equipment:['Dumbbells'],func:['Pull','Isolation'],
+    desc:'Neutral grip throughout (thumbs up). No supination. Targets the brachialis (sits under the bicep, pushes it up) and brachioradialis. Both heads of the bicep and the forearm. Can be done alternating, simultaneously, or across the body.'},
+  {id:'inc-db-curl',name:'Incline Dumbbell Curl',icon:'🏋',muscles:['Biceps'],equipment:['Dumbbells'],func:['Pull','Isolation'],
+    desc:'Seated on an incline bench (45–60°), arms hang behind the body. This creates maximum stretch on the long head of the bicep at the bottom of the ROM — a position no other curl can replicate. Allow a full hang, supinate as you curl. Go slow. This is the best bicep stretch exercise.'},
+  {id:'preacher-curl',name:'Preacher Curl',icon:'🏋',muscles:['Biceps'],equipment:['Barbell','Machine'],func:['Pull','Isolation'],
+    desc:'Upper arm braced on the angled pad, removing any possibility of cheating. The angle creates peak contraction emphasis and high tension at the bottom. Squeeze hard at the top, lower slowly. Great for the short head and peak development.'},
+  {id:'cable-curl',name:'Cable Curl',icon:'🔄',muscles:['Biceps'],equipment:['Cable'],func:['Pull','Isolation'],
+    desc:'Cable provides constant tension even at the bottom of the ROM, unlike dumbbells. Keep elbows fixed. Supinate at the top. Drop sets are very effective here — strip weight immediately and continue.'},
+  {id:'cable-curl-high',name:'High Cable Curl',icon:'🔄',muscles:['Biceps'],equipment:['Cable'],func:['Pull','Isolation'],
+    desc:'Cables set at head height on both sides, arms extended out like a crucifix. Curl toward your temples. This positions the bicep in a peak-contracted state while also providing tension in the stretched position. The classic "double bicep" pose.'},
+  {id:'spider-curl',name:'Spider Curl',icon:'🏋',muscles:['Biceps'],equipment:['Barbell','Dumbbells'],func:['Pull','Isolation'],
+    desc:'Chest down on an incline bench, arms hanging straight down perpendicular to the floor. Curl up from a dead hang. Gravity provides maximum tension at the bottom. Upper arm cannot swing. Incredible stretch and peak tension combination.'},
+  {id:'conc-curl',name:'Concentration Curl',icon:'🏋',muscles:['Biceps'],equipment:['Dumbbells'],func:['Pull','Isolation'],
+    desc:'Seated, elbow braced on inner thigh. No swinging possible. Full supination at the top. Slow and controlled. Great for developing the peak and working each arm independently to address imbalances.'},
+  {id:'machine-curl',name:'Bicep Curl Machine',icon:'⚙',muscles:['Biceps'],equipment:['Machine'],func:['Pull','Isolation'],
+    desc:'Consistent resistance through the ROM. Arm position fixed. Great for drop sets, burnouts, and when joints need a break from free weights. Adjust the seat so the elbows align with the machine pivot point.'},
+  // ── TRICEPS ────────────────────────────────────────────────────────────
+  {id:'skullcrusher',name:'Skullcrusher',icon:'🏋',muscles:['Triceps'],equipment:['Barbell'],func:['Push','Isolation'],
+    desc:'EZ bar preferred for wrist comfort. Lie flat, elbows pointing toward the ceiling, lower the bar to the forehead (or slightly behind the head for more stretch). 3-second eccentric. Elbows should not flare. The long head of the tricep gets a significant stretch when lowering behind the head. Heavy compound tricep builder.'},
+  {id:'tricep-pushdown',name:'Tricep Pushdown',icon:'🔄',muscles:['Triceps'],equipment:['Cable'],func:['Push','Isolation'],
+    desc:'Rope or bar attachment at the top of the cable stack. Elbows fixed at the sides. Drive the attachment down until full elbow extension, spread the rope at the bottom for extra contraction. Slow return — resist the weight on the way up. Lateral and medial head emphasis.'},
+  {id:'oh-tricep-ext',name:'Overhead Tricep Extension',icon:'🏋',muscles:['Triceps'],equipment:['Dumbbells','Cable'],func:['Push','Isolation'],
+    desc:'Either a dumbbell overhead or cable overhead (facing away from the stack). The overhead position fully stretches the long head of the tricep — which is the largest of the three heads. Elbows by the ears, lower as far as possible, extend fully. Do NOT use too much weight — the stretch is the point.'},
+  {id:'tricep-kickback',name:'Tricep Kickback',icon:'🏋',muscles:['Triceps'],equipment:['Dumbbells','Cable'],func:['Push','Isolation'],
+    desc:'Hinge forward, upper arm parallel to the floor. Extend the forearm back to full lockout, squeezing the tricep hard at the top. The peak contraction in the extended position is unmatched. Best with cable for constant tension. Keep upper arm completely still.'},
+  {id:'tricep-dip',name:'Tricep Dip',icon:'🤸',muscles:['Triceps','Chest'],equipment:['Bodyweight'],func:['Push','Compound'],
+    desc:'On parallel bars or a dip station. Stay upright (slight forward lean shifts emphasis to chest). Lower until upper arms are at least parallel to the floor, then drive up. Add weight with a dip belt. One of the best tricep mass builders — treat it like a compound. Do not skip depth.'},
+  {id:'cable-tricep-ext',name:'Single Arm Cable Tricep Extension',icon:'🔄',muscles:['Triceps'],equipment:['Cable'],func:['Push','Isolation'],
+    desc:'One arm at a time, cable from above. Elbow fixed, full extension, squeeze at lockout. Works each arm independently. Great for finding and fixing imbalances. All three heads are activated.'},
+  {id:'jm-press',name:'JM Press',icon:'🏋',muscles:['Triceps'],equipment:['Barbell'],func:['Push','Compound'],
+    desc:'Hybrid between a close-grip bench and a skullcrusher. Lower the bar toward the neck, elbows tracking forward more than a bench press. The triceps are under tension through both the stretch and pressing phases. A powerlifting accessory that builds serious tricep mass.'},
+  {id:'machine-tricep-ext',name:'Tricep Extension Machine',icon:'⚙',muscles:['Triceps'],equipment:['Machine'],func:['Push','Isolation'],
+    desc:'Overhead or pushdown style machine. Consistent resistance through full ROM. No stabilization required. Great for accumulating volume and drop sets. Adjust the seat so the elbows align with the pivot.'},
+  // ── QUADS ──────────────────────────────────────────────────────────────
+  {id:'bb-squat',name:'Barbell Back Squat',icon:'🏋',muscles:['Quads','Glutes','Hamstrings'],equipment:['Barbell'],func:['Push','Compound'],
+    desc:'High bar (on traps) or low bar (across rear delts). High bar is more upright and quad-dominant. Take a breath, brace 360 degrees, descend with knees tracking over toes, hip crease below parallel. Drive the floor away on the ascent. The king of leg exercises. Non-negotiable movement for serious lower body development.'},
+  {id:'bb-front-squat',name:'Barbell Front Squat',icon:'🏋',muscles:['Quads'],equipment:['Barbell'],func:['Push','Compound'],
+    desc:'Bar racked on the front delts, elbows high throughout. Maximally upright torso — the most quad-dominant squat variation. High skill movement. Core, upper back, and wrist mobility required. Lower is deeper than the back squat for many people. Essential for quad sweep development.'},
+  {id:'leg-press',name:'Leg Press',icon:'⚙',muscles:['Quads','Glutes'],equipment:['Machine'],func:['Push','Compound'],
+    desc:'Foot position determines emphasis: low and narrow = quad dominant, high and wide = glute/ham dominant. Push through the full foot, not just the toes. Do NOT lock the knees out at the top. Full ROM — lower the sled as far as safely possible without the lower back rounding off the pad. A brutally effective quad builder when done with proper depth.'},
+  {id:'hack-squat',name:'Hack Squat Machine',icon:'⚙',muscles:['Quads','Glutes'],equipment:['Machine'],func:['Push','Compound'],
+    desc:'45° angle machine. Fixed movement path, back supported. Allows very heavy loading with less technique requirement than barbell squat. Knees should track over toes. Full ROM. Lower the sled until hamstrings touch calves. Great quad and glute builder.'},
+  {id:'leg-ext',name:'Leg Extension',icon:'⚙',muscles:['Quads'],equipment:['Machine'],func:['Isolation'],
+    desc:'Pure quad isolation. Adjust the machine so the axis of rotation aligns with the knee. Full extension at the top — hold for 1 full second at peak contraction. Lower slowly (3 seconds). Do not jerk the weight. Toes pointed slightly outward can emphasize the vastus lateralis (outer quad). Great for knee joint health when done correctly.'},
+  {id:'bss',name:'Bulgarian Split Squat',icon:'🏋',muscles:['Quads','Glutes'],equipment:['Dumbbells','Barbell'],func:['Push','Compound'],
+    desc:'Rear foot elevated on a bench, front foot forward enough that the knee does not pass the toe excessively. Vertical shin on the front leg. Lower until the rear knee grazes the floor. For glute emphasis, lean forward. For quad emphasis, stay upright. One of the most effective unilateral lower body exercises despite being aggressively uncomfortable.'},
+  {id:'walking-lunge',name:'Walking Lunge',icon:'🏋',muscles:['Quads','Glutes','Hamstrings'],equipment:['Dumbbells'],func:['Push','Compound'],
+    desc:'Long stride for glute bias, shorter stride for quad bias. Keep the torso upright. Step through each rep — do not drag the back foot. Can be done with dumbbells, barbell, or a trap bar. Heavy weighted lunges are one of the most metabolically demanding and effective lower body exercises.'},
+  {id:'step-up',name:'Weighted Step-Up',icon:'🏋',muscles:['Quads','Glutes'],equipment:['Dumbbells','Barbell'],func:['Push','Compound'],
+    desc:'Step onto a box or bench with one leg, driving the knee up and pushing through the heel of the elevated foot. Do not push off the trailing foot. Single-leg movement with high glute and quad activation. Height of the box determines emphasis.'},
+  {id:'sissy-squat',name:'Sissy Squat',icon:'🤸',muscles:['Quads'],equipment:['Bodyweight'],func:['Push','Isolation'],
+    desc:'Extreme quad isolation. Hold onto something for balance, lean back, lower until the body is nearly horizontal. The knee tracks far forward over the toe — this is intentional here. Maximum quad stretch with body weight or a plate held to the chest. High stimulus, low load.'},
+  // ── HAMSTRINGS & GLUTES ────────────────────────────────────────────────
+  {id:'rdl',name:'Romanian Deadlift',icon:'🏋',muscles:['Hamstrings','Glutes'],equipment:['Barbell'],func:['Pull','Compound'],
+    desc:'Hip hinge with soft knees. Push your hips back as you lower the bar — feel the hamstrings load under stretch. The bar stays close to the legs throughout. Lower until you feel a significant hamstring stretch (usually mid-shin), not necessarily until the bar touches the floor. Maintain a neutral spine always. The most effective hamstring and glute builder.'},
+  {id:'db-rdl',name:'Dumbbell RDL',icon:'🏋',muscles:['Hamstrings','Glutes'],equipment:['Dumbbells'],func:['Pull','Compound'],
+    desc:'Same mechanics as the BB RDL. Dumbbells can travel slightly outside the legs which allows even greater ROM and a deeper hip hinge. 4-second eccentric for maximum stimulus and time under tension.'},
+  {id:'single-leg-rdl',name:'Single-Leg RDL',icon:'🏋',muscles:['Hamstrings','Glutes'],equipment:['Dumbbells'],func:['Pull','Compound'],
+    desc:'Balance on one leg, hinge at the hip, extending the free leg behind for counterbalance. Extreme hip stability demand. The glute of the standing leg is under continuous tension. Reveals and corrects strength imbalances between sides. Go lighter than you think.'},
+  {id:'leg-curl-lying',name:'Lying Leg Curl',icon:'⚙',muscles:['Hamstrings'],equipment:['Machine'],func:['Isolation'],
+    desc:'The hamstring is bi-articular — it crosses both the hip and the knee. In the lying position the hip is extended, which puts the hamstring in a slightly shortened state at the hip, meaning the knee flexion is doing the bulk of the work. 3-second eccentric, full stretch at the bottom. Never jerk the weight.'},
+  {id:'leg-curl-seated',name:'Seated Leg Curl',icon:'⚙',muscles:['Hamstrings'],equipment:['Machine'],func:['Isolation'],
+    desc:'In the seated position, the hip is flexed, which pre-stretches the hamstring and increases the muscle length at the start — this creates a stronger stimulus than the lying version. Research shows the seated leg curl produces greater hamstring hypertrophy. Full ROM. Slow eccentric.'},
+  {id:'nordic-curl',name:'Nordic Hamstring Curl',icon:'🤸',muscles:['Hamstrings'],equipment:['Bodyweight'],func:['Isolation'],
+    desc:'Kneel with ankles secured under a bench or bar. Lower yourself toward the floor as slowly as humanly possible, using only hamstring tension. Catch yourself with your hands at the bottom. Pull yourself back up (this may require assistance initially). The most demanding hamstring eccentric exercise in existence. Significant DOMS expected.'},
+  {id:'hip-thrust',name:'Barbell Hip Thrust',icon:'🏋',muscles:['Glutes'],equipment:['Barbell'],func:['Push','Compound'],
+    desc:'Upper back braced on a bench at approximately mid-scapula height. Bar in the hip crease with a pad. Drive through both heels, extend the hips fully, 1-second pause at full extension — SQUEEZE the glutes maximally. Chin tucked slightly to prevent hyperextension of the lower back. The primary glute mass builder. No other exercise loads the glutes as heavily through full hip extension.'},
+  {id:'cable-hip-thrust',name:'Cable Pull-Through',icon:'🔄',muscles:['Glutes','Hamstrings'],equipment:['Cable'],func:['Pull','Compound'],
+    desc:'Facing away from a low cable, rope attachment between the legs. Hinge at the hips (not the lower back), allowing the rope to pull the hands back through the legs, then drive the hips forward to full extension. Excellent glute-ham developer with constant cable tension.'},
+  {id:'glute-kickback',name:'Cable Glute Kickback',icon:'🔄',muscles:['Glutes'],equipment:['Cable'],func:['Isolation'],
+    desc:'Ankle attachment, cable set at the lowest position. Hinge slightly at the hips and drive the heel back and upward in an arc, squeezing the glute fully at the top position. Slow eccentric back to the start. Isolates the glute almost entirely.'},
+  {id:'abductor-machine',name:'Hip Abduction Machine',icon:'⚙',muscles:['Glutes'],equipment:['Machine'],func:['Isolation'],
+    desc:'Seated, legs against the pads. Drive the legs outward against the resistance. Targets the gluteus medius and minimus — the side glute muscles critical for hip stability and the "hip dip" area. High rep, moderate weight, squeeze at peak contraction.'},
+  {id:'good-morning',name:'Good Morning',icon:'🏋',muscles:['Hamstrings','Back'],equipment:['Barbell'],func:['Pull','Compound'],
+    desc:'Bar on the back like a squat. Hinge at the hips with soft knees, lowering the torso until it is nearly parallel to the floor. The spinal erectors work isometrically to maintain a neutral spine while the hamstrings work through an extreme stretch. Light to moderate weight. Superior spinal erector and hamstring developer.'},
+  {id:'sumo-squat',name:'Sumo Squat (Goblet)',icon:'🏋',muscles:['Glutes','Quads','Hamstrings'],equipment:['Dumbbells'],func:['Push','Compound'],
+    desc:'Wide stance, toes pointed 45° outward, goblet hold or dumbbells at sides. Drive the knees out throughout the movement. Deep squat. Excellent inner thigh, glute, and quad activation. The wide stance dramatically increases glute involvement compared to a narrow stance.'},
+  // ── CALVES ─────────────────────────────────────────────────────────────
+  {id:'standing-calf',name:'Standing Calf Raise',icon:'🏋',muscles:['Calves'],equipment:['Machine'],func:['Isolation'],
+    desc:'Stand on a plate or step, balls of the feet on the edge, heels hanging. Full ROM is critical — calves respond to stretch. Lower until a deep stretch, drive up to full plantarflexion, hold 1–2s. The gastrocnemius (upper, bulkier calf) is the primary target with the knee straight. Calves respond to high volume and high reps.'},
+  {id:'seated-calf',name:'Seated Calf Raise',icon:'⚙',muscles:['Calves'],equipment:['Machine'],func:['Isolation'],
+    desc:'The knee is bent, which slackens the gastrocnemius and isolates the soleus (the lower, wider calf muscle beneath the gastrocnemius). Full ROM required — a complete stretch at the bottom is essential. The soleus is a very slow-twitch muscle and responds well to high reps and long time under tension.'},
+  {id:'leg-press-calf',name:'Leg Press Calf Raise',icon:'⚙',muscles:['Calves'],equipment:['Machine'],func:['Isolation'],
+    desc:'Perform calf raises on the leg press machine. Position only the balls of the feet on the lower portion of the sled. Full ROM. Allows very heavy loading. A complete stretch at the bottom is the growth stimulus.'},
+  {id:'donkey-calf-raise',name:'Donkey Calf Raise',icon:'🏋',muscles:['Calves'],equipment:['Machine','Bodyweight'],func:['Isolation'],
+    desc:'Bend at the hips, arms supported, partner or weight on the lower back. This stretched hip position increases the stretch on the gastrocnemius beyond what standing raises can achieve. Old-school but extremely effective. Arnold famously used this with two bodybuilders sitting on his back.'},
+  // ── CORE ───────────────────────────────────────────────────────────────
+  {id:'plank',name:'Plank',icon:'🤸',muscles:['Core'],equipment:['Bodyweight'],func:['Isometric'],
+    desc:'Forearms or straight arms, body in a rigid straight line from heels to head. Squeeze glutes, brace the abs as if about to get punched. Do not let the hips sag or pike. Time-based. Progress by adding time, weight on the back, or using an unstable surface.'},
+  {id:'ab-wheel',name:'Ab Wheel Rollout',icon:'🤸',muscles:['Core'],equipment:['Bodyweight'],func:['Isometric','Compound'],
+    desc:'Kneel with the wheel directly under the shoulders. Roll out as far as possible while maintaining a rigid core — the back should NOT arch. Roll back to the start. The eccentric phase (rolling out) is the most demanding. One of the most effective core exercises ever devised.'},
+  {id:'cable-crunch',name:'Cable Crunch',icon:'🔄',muscles:['Core'],equipment:['Cable'],func:['Isolation'],
+    desc:'Kneel in front of a high cable, rope attachment. Hold the rope behind the head or at the temples. Crunch DOWN — not forward. The spine should flex, bringing the elbows toward the knees. The key is spinal flexion against the cable resistance. This is one of the few core exercises with genuine progressive overload potential.'},
+  {id:'hanging-leg-raise',name:'Hanging Leg Raise',icon:'🤸',muscles:['Core'],equipment:['Bodyweight'],func:['Isolation'],
+    desc:'Hang from a pull-up bar. Raise legs until they are parallel or higher — use posterior pelvic tilt at the top (curl the pelvis toward you) to engage the lower abs maximally. No swinging. Bent-knee version is easier. Add ankle weights or hold a dumbbell between feet to progress.'},
+  {id:'decline-situp',name:'Decline Sit-Up',icon:'🏋',muscles:['Core'],equipment:['Bodyweight'],func:['Isolation'],
+    desc:'Feet secured on a decline bench, hands behind the head or holding a weight plate to the chest. Full ROM — lie back fully, come up until the torso is vertical. The decline angle increases the ROM vs a flat sit-up. Add resistance progressively.'},
+  // ── CARDIO & CONDITIONING ──────────────────────────────────────────────
+  {id:'hiit-bike',name:'HIIT Assault Bike',icon:'🚴',muscles:['Cardio'],equipment:['Machine'],func:['Cardio'],
+    desc:'30 seconds absolute maximum effort (arms and legs), 30 seconds complete rest. Repeat 8–15 rounds. The assault bike is considered one of the most brutally effective conditioning tools. Cannot be gamed — it only goes as fast as you push. High EPOC effect (continued calorie burn post-exercise).'},
+  {id:'stairmaster',name:'Stairmaster',icon:'🪜',muscles:['Cardio','Glutes'],equipment:['Machine'],func:['Cardio'],
+    desc:'Sustained effort at a challenging pace. Step fully through each stride — do not tap the steps. Holding the handles reduces the caloric expenditure significantly — use them only for balance. 20–45 minutes. Excellent glute activation as a bonus.'},
+  {id:'incline-treadmill',name:'Incline Treadmill Walk',icon:'🚶',muscles:['Cardio','Glutes'],equipment:['Machine'],func:['Cardio'],
+    desc:'12% incline, 3.0–3.5 mph, 30–45 minutes. The 12-3-30 protocol. Do NOT hold the handrails — this defeats the purpose entirely. Surprisingly effective for caloric expenditure and glute activation with very low joint impact.'},
+  {id:'rowing-machine',name:'Rowing Machine',icon:'🚣',muscles:['Cardio','Back'],equipment:['Machine'],func:['Cardio','Compound'],
+    desc:'Full body. Sequence: legs-hips-arms on the pull, reverse on the recovery. 60% legs, 20% hips, 20% arms. Keep the stroke rate sustainable (18–24 spm for steady state, 26–32 for intervals). One of the highest caloric expenditure cardio modalities with significant back and leg involvement.'},
+  {id:'liss-walk',name:'LISS Walk',icon:'🚶',muscles:['Cardio'],equipment:['Bodyweight'],func:['Cardio'],
+    desc:'Low Intensity Steady State cardio. 25–40 minutes at a brisk but conversational pace. Primarily burns fat as fuel at low intensities. Does not compromise recovery the way HIIT does. Ideal for rest days or after training. The most sustainable and joint-friendly cardio modality.'},
+  {id:'jump-rope',name:'Jump Rope',icon:'🤸',muscles:['Cardio','Calves'],equipment:['Bodyweight'],func:['Cardio'],
+    desc:'Basic double-unders or singles. 30-second rounds with 30-second rest. Excellent conditioning, coordination, and calf work. Very low equipment requirement. 10 minutes of jump rope is roughly equivalent to 30 minutes of jogging in cardiovascular demand.'},
+
+  // ── CALISTHENICS ───────────────────────────────────────────────────────
+  {id:'muscle-up',name:'Muscle-Up',icon:'🤸',muscles:['Back','Chest','Triceps','Shoulders'],equipment:['Bodyweight'],func:['Pull','Push','Compound'],
+    desc:'The muscle-up is a pull-up into a dip in one fluid motion. Start from a dead hang. Generate a powerful kip or strict pull, transition at the top of the pull by rotating the wrists over the bar and leaning forward, then press out into the dip. The transition is the skill component — the wrists must roll over the rings or bar at the top of the pull. Ring muscle-ups are more shoulder-friendly than bar. Requires significant pulling and pressing strength as a prerequisite.'},
+  {id:'ring-dip',name:'Ring Dip',icon:'🤸',muscles:['Triceps','Chest','Shoulders'],equipment:['Bodyweight'],func:['Push','Compound'],
+    desc:'On gymnastic rings, the rings naturally rotate inward during the movement, demanding significantly more stabilization than bar dips. Keep rings turned out at the top (RTO) with thumbs pointing outward — this is the standard locked-out position. Lower with control, elbows at ~45°. Full ROM. Far harder than bar dips and builds extraordinary pressing strength and stability. Add weight via a vest or belt to progress.'},
+  {id:'ring-row',name:'Ring Row (Inverted Row)',icon:'🤸',muscles:['Back','Biceps'],equipment:['Bodyweight'],func:['Pull','Compound'],
+    desc:'Rings or a low bar set at hip height. Lie underneath, heels on the floor, body in a rigid plank. Pull your chest to the rings, driving elbows back. Lower body stays completely rigid. Adjust difficulty by walking the feet forward (harder) or back (easier). Elevate feet for advanced variation. Excellent horizontal pull developer and a gateway to more advanced pulling movements.'},
+  {id:'ring-pushup',name:'Ring Push-Up',icon:'🤸',muscles:['Chest','Triceps','Shoulders'],equipment:['Bodyweight'],func:['Push','Compound'],
+    desc:'Hands in gymnastic rings set just above the floor. The instability of the rings forces constant stabilization from the chest, triceps, and rotator cuff throughout the movement. Turn the rings out at the top (RTO). Lower with full control. Harder than regular push-ups. Great shoulder health exercise when done with rings turned out.'},
+  {id:'archer-pushup',name:'Archer Push-Up',icon:'🤸',muscles:['Chest','Triceps','Shoulders'],equipment:['Bodyweight'],func:['Push','Compound'],
+    desc:'Wide hand placement. Lower to one side while keeping the opposite arm straight out to the side (like an archer drawing a bow). Alternate sides. This is a progression toward one-arm push-ups, loading one side significantly more than the other. Builds unilateral chest strength and control.'},
+  {id:'pike-pushup',name:'Pike Push-Up',icon:'🤸',muscles:['Shoulders','Triceps'],equipment:['Bodyweight'],func:['Push','Compound'],
+    desc:'Hands and feet on the floor, hips high in an inverted V position. Lower the top of your head toward the floor between the hands by bending the elbows, then press back up. The more vertical the torso, the more shoulder-dominant the movement. Primary progression toward the handstand push-up. Elevating the feet increases difficulty further.'},
+  {id:'hspu',name:'Handstand Push-Up',icon:'🤸',muscles:['Shoulders','Triceps'],equipment:['Bodyweight'],func:['Push','Compound'],
+    desc:'Kick up to a handstand against a wall, hands shoulder-width. Lower the top of the head to the floor (full ROM) then press back up. The wall provides lateral stability. This is a fully vertical pressing movement — the overhead equivalent of a close-grip bench press using bodyweight. Requires wrist, shoulder, and core strength. Progress from pike push-ups through deficit HSPU.'},
+  {id:'l-sit',name:'L-Sit',icon:'🤸',muscles:['Core','Quads','Shoulders'],equipment:['Bodyweight'],func:['Isometric'],
+    desc:'On parallettes, rings, or the floor (on fists), lift the body off the ground with legs extended horizontally. The core and hip flexors must work isometrically to maintain the L-shape while the arms support the entire bodyweight. Build up in holds: first tuck, then one-leg extended, then full L-sit. Extraordinary core, hip flexor, and shoulder girdle conditioner.'},
+  {id:'front-lever',name:'Front Lever',icon:'🤸',muscles:['Back','Core'],equipment:['Bodyweight'],func:['Isometric','Pull'],
+    desc:'Hang from a bar and hold the body horizontal, face-up, in a completely rigid plank. The lats and core work isometrically against gravity. Progress: tuck, advanced tuck, one-leg, straddle, full front lever. Each level requires significant lat strength. One of the most impressive displays of relative back strength in calisthenics.'},
+  {id:'back-lever',name:'Back Lever',icon:'🤸',muscles:['Back','Chest','Shoulders'],equipment:['Bodyweight'],func:['Isometric'],
+    desc:'Hang from a bar or rings, body face-down and horizontal, arms straight. The posterior chain and chest work isometrically. Progress through the same stages as the front lever: tuck → straddle → full. An excellent measure of shoulder flexibility and posterior chain strength.'},
+  {id:'planche',name:'Planche Progression',icon:'🤸',muscles:['Shoulders','Chest','Core'],equipment:['Bodyweight'],func:['Isometric','Push'],
+    desc:'The planche holds the body horizontal with arms straight, supported only by the hands. The most advanced static hold in calisthenics. Progress: planche lean → tuck planche → advanced tuck → straddle → full planche. Requires extraordinary shoulder and core strength. Even the lower progressions provide significant training stimulus for the anterior delt.'},
+  {id:'dip-bar-leg-raise',name:'Parallel Bar Leg Raise',icon:'🤸',muscles:['Core'],equipment:['Bodyweight'],func:['Isolation'],
+    desc:'Support yourself on parallel bars or dip handles. Raise straight legs until horizontal or vertical, using posterior pelvic tilt at the top to fully engage the lower abs. A step between hanging leg raises (harder) and floor leg raises (easier). Control the descent — the eccentric is where the growth is.'},
+  {id:'explosive-pushup',name:'Explosive Push-Up',icon:'🤸',muscles:['Chest','Triceps','Shoulders'],equipment:['Bodyweight'],func:['Push','Compound'],
+    desc:'Standard push-up but drive explosively hard off the floor so the hands leave the ground. Land softly and immediately descend into the next rep. Add a clap for a plyometric clap push-up. Develops fast-twitch chest and tricep fibers. Use sparingly as a power development tool — not a high-rep exercise.'},
+  {id:'typewriter-pullup',name:'Typewriter Pull-Up',icon:'🤸',muscles:['Back','Biceps'],equipment:['Bodyweight'],func:['Pull','Compound'],
+    desc:'Wide-grip pull-up variation. Pull to bar height, then traverse laterally — shift from one hand to the other at the top, like a typewriter carriage. An advanced unilateral pull progression. Each side must support more of the bodyweight momentarily. Prerequisite for one-arm pull-up development.'},
+  {id:'one-arm-row-ring',name:'One-Arm Ring Row',icon:'🤸',muscles:['Back','Biceps'],equipment:['Bodyweight'],func:['Pull','Compound'],
+    desc:'Ring row performed with one arm. The free hand hangs at the side or on the hip. Requires significant unilateral back strength and anti-rotation core engagement. Adjust body angle to control difficulty. A true test of one-sided pulling strength.'},
+  {id:'dragon-flag',name:'Dragon Flag',icon:'🤸',muscles:['Core','Back'],equipment:['Bodyweight'],func:['Isometric','Isolation'],
+    desc:'Lie on a bench, grip the bench overhead. From the shoulders down, raise the entire body to vertical then lower slowly in a perfectly rigid plank — only the upper back and shoulders touch the bench. The body must not pike or break at the hips. Invented and popularized by Bruce Lee. One of the most demanding core exercises in existence.'},
+  {id:'tuck-jump',name:'Tuck Jump',icon:'🤸',muscles:['Quads','Glutes','Calves','Cardio'],equipment:['Bodyweight'],func:['Cardio','Compound'],
+    desc:'Jump and pull both knees to the chest at the peak of the jump, then land softly on both feet and immediately repeat. High demand on power and cardiovascular conditioning. Use in circuits or as a plyometric finisher. Land with soft knees to protect the joints.'},
+  {id:'broad-jump',name:'Broad Jump',icon:'🤸',muscles:['Quads','Glutes','Hamstrings'],equipment:['Bodyweight'],func:['Compound'],
+    desc:'Standing long jump for maximum horizontal distance. Drive the arms back, hinge at the hips, then explode forward and up. Land with soft, bent knees. Primarily a lower body power development exercise. Track distance to measure progress. 3–5 sets of 3–5 jumps with full recovery between.'},
+  {id:'box-jump',name:'Box Jump',icon:'🤸',muscles:['Quads','Glutes','Hamstrings','Calves'],equipment:['Bodyweight'],func:['Compound'],
+    desc:'Load the hips and jump onto a box or platform. Land softly with bent knees in an athletic position. Step down — do not jump down to protect the Achilles. Box height should be challenging but allow safe, confident landings. Develops lower body explosive power. 3–5 sets of 3–5 reps, full recovery.'},
+  {id:'pistol-squat',name:'Pistol Squat',icon:'🤸',muscles:['Quads','Glutes'],equipment:['Bodyweight'],func:['Push','Compound'],
+    desc:'Single-leg squat with the free leg extended forward. Descend to the floor on one leg, then drive back up. Requires quad strength, ankle mobility, and balance in equal measure. Progress through: assisted (TRX/rings), to box (partial depth), to full floor pistol. One of the best measures of unilateral lower body strength.'},
+  {id:'shrimp-squat',name:'Shrimp Squat',icon:'🤸',muscles:['Quads','Glutes'],equipment:['Bodyweight'],func:['Push','Compound'],
+    desc:'Single-leg squat where the rear leg is held bent behind you (like a Bulgarian split squat without the bench). Descend until the rear knee touches the floor. More balance and hip flexor flexibility demanding than the pistol squat. Some find this more natural than the pistol squat. Can be loaded with a vest or dumbbells.'},
+  {id:'glute-bridge-bw',name:'Bodyweight Glute Bridge',icon:'🤸',muscles:['Glutes','Hamstrings'],equipment:['Bodyweight'],func:['Push','Isolation'],
+    desc:'Lie on your back, feet flat on the floor, hip-width apart. Drive the hips up to full extension, squeezing the glutes hard at the top for 1–2 seconds. Lower under control. Progress to single-leg, then elevate shoulders for a bodyweight hip thrust. An activation exercise or high-rep burnout. High reps (20–30) and bands above the knee increase effectiveness.'},
+  {id:'nordic-hamstring',name:'Nordic Hamstring Curl',icon:'🤸',muscles:['Hamstrings'],equipment:['Bodyweight'],func:['Isolation'],
+    desc:'Kneel on a soft surface, ankles secured under a barbell or by a partner. Lower your body toward the floor as slowly as possible using only hamstring tension — this eccentric loading is the stimulus. Catch yourself with your hands at the bottom, push back to the start. The most powerful eccentric hamstring exercise available. Research consistently shows significant hamstring hypertrophy and injury prevention. Expect extreme DOMS for the first few sessions.'},
+  {id:'cossack-squat',name:'Cossack Squat',icon:'🤸',muscles:['Quads','Glutes','Hamstrings','Calves'],equipment:['Bodyweight'],func:['Push','Compound'],
+    desc:'Wide stance. Squat down to one side, keeping the other leg straight out to the side with toes pointed up. The squatting side goes to full depth. Shift side to side in a controlled manner. Outstanding hip, adductor, and ankle mobility exercise that also builds significant unilateral leg strength. Can be loaded with a goblet hold.'},
+  {id:'wall-sit',name:'Wall Sit',icon:'🤸',muscles:['Quads','Glutes'],equipment:['Bodyweight'],func:['Isometric'],
+    desc:'Back flat against a wall, thighs parallel to the floor at a 90° knee angle. Time-based isometric hold. Quad and glute endurance. Add a plate on the thighs to increase difficulty. Simple, effective, zero equipment needed.'},
+  {id:'bear-crawl',name:'Bear Crawl',icon:'🤸',muscles:['Core','Shoulders','Quads'],equipment:['Bodyweight'],func:['Compound','Cardio'],
+    desc:'On all fours with knees just off the floor, move forward by advancing the opposite hand and foot simultaneously. Keep the hips low and the back flat. Full-body conditioning that challenges the core, shoulder stability, and hip mobility simultaneously. Use for warm-ups, circuits, or finishers. Also effective backward and laterally.'},
+  {id:'human-flag',name:'Human Flag',icon:'🤸',muscles:['Shoulders','Core','Back'],equipment:['Bodyweight'],func:['Isometric'],
+    desc:'Grip a vertical pole, one hand above and one below, and hold the body horizontal to the ground — sideways. One of the most visually impressive calisthenics feats. Progress through: tuck hold, straddle hold, full flag. Primarily an oblique, lat, and shoulder girdle exercise. Takes months to years of dedicated training to achieve.'},
+  // ── FREE WEIGHTS ───────────────────────────────────────────────────────
+  {id:'trap-bar-deadlift',name:'Trap Bar Deadlift',icon:'🏋',muscles:['Back','Quads','Glutes','Hamstrings'],equipment:['Barbell'],func:['Pull','Compound'],
+    desc:'Using a hex/trap bar, stand inside the bar and grip the handles at the sides. More upright torso than conventional deadlift, greater quad involvement. Easier to learn and maintain spinal neutrality. Many lifters can lift significantly more on the trap bar than conventional. Excellent option for athletes and those with lower back sensitivity.'},
+  {id:'zercher-squat',name:'Zercher Squat',icon:'🏋',muscles:['Quads','Glutes','Back','Core'],equipment:['Barbell'],func:['Push','Compound'],
+    desc:'Bar held in the crooks of the elbows, cradled in the forearms. Forces a deeply upright torso (even more than front squat) and enormous core engagement to hold the position. Brutal on the upper body and core while still being a serious leg exercise. Use padding on the bar for comfort. Not for everyone, but extraordinarily effective.'},
+  {id:'safety-bar-squat',name:'Safety Bar Squat',icon:'🏋',muscles:['Quads','Glutes','Hamstrings'],equipment:['Barbell'],func:['Push','Compound'],
+    desc:'A specialty bar with handles and a cambered design that sits on the shoulders without requiring the arms to reach back. More upright torso than back squat. Excellent option for those with shoulder or wrist mobility issues. The forward weight distribution increases quad and upper back demand. Pairs well with high-bar back squats.'},
+  {id:'paused-squat',name:'Paused Squat',icon:'🏋',muscles:['Quads','Glutes','Hamstrings'],equipment:['Barbell'],func:['Push','Compound'],
+    desc:'Back squat with a 2–3 second pause at the bottom position (hip crease below parallel). Eliminates the stretch reflex, making the concentric drive entirely muscular. Builds strength out of the hole and reinforces proper depth. Use 15–20% less weight than your regular squat. One of the best squat technique developers.'},
+  {id:'db-goblet-squat',name:'Goblet Squat',icon:'🏋',muscles:['Quads','Glutes'],equipment:['Dumbbells'],func:['Push','Compound'],
+    desc:'Hold a dumbbell or kettlebell vertically at the chest (goblet position). The counterbalance naturally promotes an upright torso and good squat mechanics. Excellent teaching tool for the squat pattern. Also a legitimate strength exercise at heavy loads. Drive the elbows between the knees at the bottom to reinforce depth.'},
+  {id:'db-step-up',name:'Dumbbell Step-Up',icon:'🏋',muscles:['Quads','Glutes'],equipment:['Dumbbells'],func:['Push','Compound'],
+    desc:'Step onto a box or bench with one foot, drive through the heel of the elevated foot without pushing off the trailing foot. Single-leg strengthener with high glute and quad recruitment. The height of the box determines the hip angle and emphasis. Can be loaded very heavy with dumbbells.'},
+  {id:'db-lateral-lunge',name:'Dumbbell Lateral Lunge',icon:'🏋',muscles:['Quads','Glutes','Hamstrings'],equipment:['Dumbbells'],func:['Push','Compound'],
+    desc:'Step out wide to the side, sitting into the stepping leg while the other leg stays straight. Push back to the center. The lateral loading pattern targets the inner thigh (adductors), glute medius, and quads in a way that forward lunges cannot replicate. Great for hip mobility and multi-planar lower body strength.'},
+  {id:'db-reverse-lunge',name:'Dumbbell Reverse Lunge',icon:'🏋',muscles:['Quads','Glutes'],equipment:['Dumbbells'],func:['Push','Compound'],
+    desc:'Step backward into a lunge position. More knee-friendly than forward lunges because the loading angle is easier on the patellar tendon. The quad of the front leg does the primary work. Excellent for developing single-leg stability and quad-glute strength. Can be performed explosively (step-up-drive-knee at top) for power development.'},
+  {id:'db-farmers-carry',name:'Farmer Carry',icon:'🏋',muscles:['Traps','Core','Forearms','Calves'],equipment:['Dumbbells','Barbell'],func:['Compound','Isometric'],
+    desc:'Pick up heavy dumbbells or loaded handles, stand tall with shoulders pulled back, and walk for distance or time. One of the most functional strength exercises. Trains the traps, core stability (anti-lateral flexion), grip, and requires total body tension. Loaded carries are seriously underrated for overall strength and conditioning. Go as heavy as form allows.'},
+  {id:'db-suitcase-carry',name:'Suitcase Carry',icon:'🏋',muscles:['Core','Traps','Forearms'],equipment:['Dumbbells'],func:['Compound','Isometric'],
+    desc:'Carry a single heavy dumbbell in one hand, resist the urge to lean to that side. The obliques and quadratus lumborum work maximally to keep you upright. One of the best anti-lateral-flexion core exercises available. Walk 30–50 meters per side.'},
+  {id:'bb-good-morning',name:'Barbell Good Morning',icon:'🏋',muscles:['Hamstrings','Back','Glutes'],equipment:['Barbell'],func:['Pull','Compound'],
+    desc:'Bar on the back like a squat. Hinge forward at the hips with soft knees, lowering until the torso is approximately parallel to the floor, then drive back up. The spinal erectors work isometrically to maintain a neutral spine under load. Exceptional posterior chain developer. Treat this with respect — keep it light to moderate and the form immaculate.'},
+  {id:'db-pullover',name:'Dumbbell Pullover',icon:'🏋',muscles:['Back','Chest'],equipment:['Dumbbells'],func:['Pull','Isolation'],
+    desc:'Lie across a bench (upper back only), hold a dumbbell overhead with both hands, arms slightly bent. Lower the dumbbell back over the head in an arc until a full lat and chest stretch, then pull it back over the chest. Trains the lat in a lengthened position. Arnold considered this the exercise that expanded his ribcage. Great finisher for back day.'},
+  {id:'db-upright-row',name:'Dumbbell Upright Row',icon:'🏋',muscles:['Shoulders','Traps'],equipment:['Dumbbells'],func:['Pull','Compound'],
+    desc:'Hold dumbbells in front of the thighs, pull straight up to chin height, leading with the elbows. Keep elbows at or above shoulder height at the top. The dumbbell version is more shoulder-friendly than barbell as the wrists can rotate naturally. Traps and lateral delts.'},
+  {id:'db-bentover-row',name:'Dumbbell Bent-Over Row',icon:'🏋',muscles:['Back','Biceps'],equipment:['Dumbbells'],func:['Pull','Compound'],
+    desc:'Both dumbbells, torso hinged forward at 45°, row both dumbbells simultaneously to the lower ribs. Greater ROM at the bottom vs barbell since the dumbbells can travel below bar level. Squeeze the shoulder blades hard at the top. Good alternative to barbell rows when a barbell is unavailable.'},
+  {id:'bb-push-press',name:'Barbell Push Press',icon:'🏋',muscles:['Shoulders','Triceps','Quads'],equipment:['Barbell'],func:['Push','Compound'],
+    desc:'Like an overhead press but with a slight knee dip and leg drive to initiate the bar. The legs provide momentum through the sticking point, allowing heavier loads to be pressed overhead. A bridge between pure shoulder strength and power. Key for overhead athletes. Do not confuse with a jerk — the legs do not catch the bar at the top.'},
+  {id:'db-push-press',name:'Dumbbell Push Press',icon:'🏋',muscles:['Shoulders','Triceps','Quads'],equipment:['Dumbbells'],func:['Push','Compound'],
+    desc:'Dumbbells at shoulder height, slight knee dip, drive through the legs and press the dumbbells overhead simultaneously. Uses the whole body. Greater range of motion than the barbell push press. Good power development tool.'},
+  {id:'landmine-press',name:'Landmine Press',icon:'🏋',muscles:['Shoulders','Chest','Triceps'],equipment:['Barbell'],func:['Push','Compound'],
+    desc:'One end of a barbell anchored in a corner or landmine attachment. Press the sleeve end at an angle from shoulder level to lockout. The angled pressing path is extremely shoulder-friendly — a great option for those with overhead mobility restrictions. Can be done single-arm or both arms. Anterior delt and upper chest emphasis.'},
+  {id:'landmine-squat',name:'Landmine Squat',icon:'🏋',muscles:['Quads','Glutes'],equipment:['Barbell'],func:['Push','Compound'],
+    desc:'Hold the sleeve of a landmine barbell at chest height with both hands, goblet-style. The angled resistance naturally promotes an upright torso and assists with balance. Very quad-dominant. Great option for beginners learning the squat pattern or for those with back issues.'},
+  {id:'landmine-row',name:'Landmine Row',icon:'🏋',muscles:['Back','Biceps'],equipment:['Barbell'],func:['Pull','Compound'],
+    desc:'Straddle the barbell, hinge forward, grip the sleeve with one or both hands and row it toward the hip. The landmine allows a natural arc that follows the body. Single-arm version is essentially a Meadows row. Excellent back thickness and lat exercise.'},
+  {id:'kb-swing',name:'Kettlebell Swing',icon:'🏋',muscles:['Glutes','Hamstrings','Back','Cardio'],equipment:['Dumbbells'],func:['Pull','Compound','Cardio'],
+    desc:'Hinge at the hips, swing the kettlebell (or dumbbell) back between the legs with a loaded hip hinge, then drive the hips forward explosively to swing the weight to shoulder height. The hips do the work — this is NOT a squat. The glutes fire powerfully at the top. Excellent posterior chain conditioner and metabolic tool. Russian swing stops at shoulder height; American swing goes overhead.'},
+  {id:'kb-goblet-squat',name:'Kettlebell Goblet Squat',icon:'🏋',muscles:['Quads','Glutes'],equipment:['Dumbbells'],func:['Push','Compound'],
+    desc:'Hold a kettlebell at the horns (handles) at chest height. The counterbalance promotes an upright torso. Squat to full depth, driving the elbows between the knees at the bottom. Excellent squat mechanic developer and a legitimate strengthening exercise at heavier loads.'},
+  {id:'kb-turkish-getup',name:'Turkish Get-Up',icon:'🏋',muscles:['Shoulders','Core','Glutes'],equipment:['Dumbbells'],func:['Compound','Isometric'],
+    desc:'Lie on the floor with a dumbbell or kettlebell pressed overhead in one hand. Through a series of controlled movements — roll to elbow, push to hand, sweep the leg through, lunge up — arrive standing with the weight still overhead, then reverse the movement back to the floor. The entire chain must stabilize the weight through every position. Extraordinary shoulder stability, core strength, and mobility exercise. Use a light weight and master the movement pattern first.'},
+  {id:'db-snatch',name:'Dumbbell Snatch',icon:'🏋',muscles:['Shoulders','Back','Glutes','Hamstrings'],equipment:['Dumbbells'],func:['Pull','Compound'],
+    desc:'Hinge and pull a single dumbbell from the floor to overhead in one explosive movement, catching it with the arm locked out overhead. Power development exercise. Start with a Romanian deadlift position, explode the hips, shrug, and punch the arm upward. Land with soft knees. Unilateral and highly athletic.'},
+  {id:'pin-press',name:'Pin Press',icon:'🏋',muscles:['Chest','Triceps'],equipment:['Barbell'],func:['Push','Compound'],
+    desc:'Bench press started from pins set at the sticking point (usually just above the chest or at mid-range). Zero stretch reflex — pure muscular strength out of the weakest position. Eliminates the bottom portion. Excellent for breaking through a bench press plateau at the sticking point. Also safer — if you fail, the pins catch it.'},
+  {id:'floor-press',name:'Floor Press',icon:'🏋',muscles:['Chest','Triceps'],equipment:['Barbell','Dumbbells'],func:['Push','Compound'],
+    desc:'Bench press performed lying on the floor. The floor stops the elbows, limiting ROM to the lockout portion. Heavy tricep and lockout strength emphasis. No leg drive possible, making it more honest. The natural stopping point protects the shoulder. Great for building lockout strength and tricep mass. Popular in powerlifting accessory work.'},
+  {id:'incline-curl',name:'Incline Cable Curl',icon:'🔄',muscles:['Biceps'],equipment:['Cable'],func:['Pull','Isolation'],
+    desc:'Seated on an incline bench facing away from a low cable. The cable provides tension at the bottom of the movement where dumbbells provide none. Arms hang behind the body for a long head stretch. One of the best bicep exercises for combining stretch stimulus with constant cable tension.'},
+  {id:'reverse-curl',name:'Reverse Curl',icon:'🏋',muscles:['Biceps','Forearms'],equipment:['Barbell','Dumbbells'],func:['Pull','Isolation'],
+    desc:'Pronated (overhand) grip curl. The wrists stay straight throughout — do not let them break. Primarily develops the brachialis and brachioradialis. Also strengthens the forearm extensors. Often neglected but critical for balanced arm development and elbow health.'},
+  {id:'wrist-roller',name:'Wrist Roller',icon:'🏋',muscles:['Forearms'],equipment:['Bodyweight'],func:['Isolation'],
+    desc:'A weighted roller on a cord. Extend the arms forward and roll the weight up by alternately rotating each wrist. Lower under control. Exhaustive forearm flexor and extensor conditioner. The extended arm position makes this extremely demanding even at light loads.'},
+  {id:'farmers-walk-db',name:'Plate Pinch Carry',icon:'🏋',muscles:['Forearms','Traps'],equipment:['Barbell'],func:['Isometric'],
+    desc:'Pinch two weight plates together (smooth sides out) between the thumb and fingers of each hand and walk for distance or time. One of the most effective grip strength developers. No straps — the grip IS the exercise. Also hits the traps and finger extensors significantly.'},
+  {id:'split-jerk',name:'Push Jerk',icon:'🏋',muscles:['Shoulders','Triceps','Quads','Glutes'],equipment:['Barbell'],func:['Push','Compound'],
+    desc:'Front rack position. Dip the knees slightly then drive explosively, pushing the bar overhead and simultaneously dropping into a quarter-squat to receive the bar at lockout. Stand up to complete the rep. Olympic lifting derivative. Requires timing and technique. Develops explosive pressing power far beyond what a strict press can achieve.'},
 ];
 function getCustomEx(){return DB.get('custom_ex',[]);}
 function saveCustomEx(e){DB.set('custom_ex',e);}
@@ -946,7 +1220,15 @@ function setCatF(t,k){if(t==='all'){catF={muscle:'',equip:'',func:''};}else catF
 function renderCatalog(){
   const q=(document.getElementById('cat-search')?.value||'').toLowerCase();
   const items=getCatalog().filter(ex=>{
-    if(q&&!ex.name.toLowerCase().includes(q)&&!(ex.desc||'').toLowerCase().includes(q))return false;
+    if(q){
+      // Search must match name OR (equipment AND name-fragment) — 'barbell' shows only barbell exercises
+      const inName=ex.name.toLowerCase().includes(q);
+      const inEquip=ex.equipment.some(e=>e.toLowerCase().includes(q));
+      const inMuscle=ex.muscles.some(m=>m.toLowerCase().includes(q));
+      const inFunc=ex.func.some(f=>f.toLowerCase().includes(q));
+      const inDesc=(ex.desc||'').toLowerCase().includes(q);
+      if(!inName&&!inEquip&&!inMuscle&&!inFunc&&!inDesc)return false;
+    }
     if(catF.muscle&&!ex.muscles.includes(catF.muscle))return false;
     if(catF.equip&&!ex.equipment.includes(catF.equip))return false;
     if(catF.func&&!ex.func.includes(catF.func))return false;
@@ -966,7 +1248,15 @@ function renderCatalog(){
         </div>
       </div>
       <div class="ex-item-body" id="exd-${ex.id}" style="display:none;">
-        <div style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:8px;">${ex.desc||'-'}</div>
+        <div style="margin-bottom:10px;">
+          <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);margin-bottom:6px;">How To Perform</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.8;">${ex.desc||'No description available.'}</div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px;">
+          ${ex.muscles.map(m=>`<span class="pill pg">${m}</span>`).join('')}
+          ${ex.equipment.map(e=>`<span class="pill pb">${e}</span>`).join('')}
+          ${ex.func.map(f=>`<span class="pill pgr">${f}</span>`).join('')}
+        </div>
         ${ex.custom?`<button class="btn btn-d btn-sm" onclick="deleteCustomEx('${ex.id}')">Delete</button>`:''}
       </div>
     </div>`).join('')||'<div class="empty"><div class="empty-ico">🔍</div><div class="empty-t">No results</div><div class="empty-s">Try a different filter.</div></div>';
@@ -1326,6 +1616,55 @@ async function syncAllToSheets(){
   for(const s of sessions){if(!s.sets)continue;for(const[exId,sets]of Object.entries(s.sets)){if(exId.startsWith('__'))continue;await syncToSheets({exercise:exId,date:s.date,phase:'',day:s.dayName||'',sets:sets.map(st=>({set:Number(st.set),weight:String(st.weight),reps:String(st.reps),done:!!st.done}))},true);sent++;await new Promise(r=>setTimeout(r,150));}}
   showToast('Synced '+sent+' sessions to Sheets');
 }
+
+async function restoreFromSheets(){
+  const url=getSheetsURL();
+  if(!url){showToast('Configure Sheets URL first');return;}
+  const btn=document.getElementById('restore-btn');
+  if(btn){btn.textContent='Restoring...';btn.disabled=true;}
+  updateSyncDot('syncing');
+  try{
+    const res=await Promise.race([
+      fetch(url+'?action=getAll',{method:'GET',mode:'cors'}),
+      new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),15000))
+    ]);
+    const text=await res.text();
+    let data;
+    try{data=JSON.parse(text);}catch(e){throw new Error('Invalid response from Sheets');}
+    if(!data||!data.rows){throw new Error('No data returned');}
+    // Group rows into sessions by date + exercise
+    const sessions=getSessions();
+    let imported=0;
+    const byDate={};
+    data.rows.forEach(row=>{
+      const date=row.date||row[0],exercise=row.exercise||row[1];
+      const weight=row.weight||row[3],reps=row.reps||row[4],setNum=parseInt(row.set||row[2])||1,done=(row.done||row[5])==='true'||row.done===true;
+      const dayName=row.day||row[7]||'';
+      if(!date||!exercise)return;
+      if(!byDate[date])byDate[date]={};
+      if(!byDate[date][exercise]){byDate[date][exercise]={sets:[],dayName};}
+      byDate[date][exercise].sets.push({set:setNum,weight:String(weight),reps:String(reps),done});
+    });
+    Object.entries(byDate).forEach(([date,exMap])=>{
+      const sesId='restore_'+date+'_'+Date.now();
+      const existing=sessions.findIndex(s=>s.date===date&&s.programId==='bcamp52');
+      const ses={id:sesId,date,programId:'bcamp52',dayIdx:-1,dayName:Object.values(exMap)[0]?.dayName||'Restored',sets:{},note:'Restored from Sheets',duration:0,startTime:0};
+      Object.entries(exMap).forEach(([exId,ex])=>{ses.sets[exId]=ex.sets;});
+      if(existing>-1)sessions.splice(existing,1,ses);else sessions.push(ses);
+      imported++;
+    });
+    saveSessions(sessions);
+    updateSyncDot('idle');
+    showToast('Restored '+imported+' sessions from Sheets');
+    renderTrainPage();
+  }catch(err){
+    updateSyncDot('error');
+    showToast('Restore failed: '+err.message);
+  }finally{
+    if(btn){btn.textContent='Restore from Sheets';btn.disabled=false;}
+  }
+}
+
 
 // ── TOAST ─────────────────────────────────────────────────────────────────
 let _toastT=null;
