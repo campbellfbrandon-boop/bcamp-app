@@ -227,6 +227,14 @@ canvas{display:block;width:100%!important;}
 <div id="tdone">REST COMPLETE</div>
 </div></div>
 
+<!-- WORKOUT PREVIEW -->
+<div class="mo" id="preview-mo" style="align-items:flex-end;">
+  <div class="ms" style="max-height:85vh;">
+    <div class="mdrag"></div>
+    <div id="preview-content"></div>
+  </div>
+</div>
+
 <!-- PROG PICKER -->
 <div class="mo" id="ppick-mo" style="align-items:flex-end;"><div class="ms">
 <div class="mdrag"></div>
@@ -590,11 +598,70 @@ function renderWeekGrid(prog){
     </div>`;
   }).join('');
 }
-function weekTap(i){const prog=getActiveProg();if(!prog||i>=6)return;startWorkout(prog,i);}
+
+// ── WORKOUT PREVIEW ───────────────────────────────────────────────────────
+function previewWorkout(prog, dayIdx) {
+  if (!prog) return;
+  const day = prog.days[dayIdx % prog.days.length];
+  if (!day) return;
+
+  const isToday = dayIdx === getTodayIdx();
+  const totalSets = day.exercises.reduce((a, e) => a + (parseInt(e.sets) || 0), 0);
+  const estMins = Math.round(totalSets * 2.5 + day.exercises.length * 1.5);
+
+  const exRows = day.exercises.map(ex => {
+    const cat = getExById(ex.exId) || { name: ex.exId, icon: '🏋' };
+    const ss = ex.superset ? `<span class="ss-badge">SS ${ex.superset}</span>` : '';
+    const tags = cat.muscles.slice(0, 2).map(m => `<span class="pill pg">${m}</span>`).join('');
+    return `<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);">
+      <div style="font-size:18px;flex-shrink:0;">${cat.icon}</div>
+      <div class="col f1">
+        <div style="font-size:13px;font-weight:600;">${cat.name}${ss}</div>
+        <div style="display:flex;gap:4px;margin-top:3px;align-items:center;">
+          <span class="mono xs" style="color:var(--accent);">${ex.sets} x ${ex.reps}</span>
+          <span class="dim xs">·</span>
+          <span class="dim xs">${fmtRest(ex.rest)}</span>
+          ${tags ? '<span class="dim xs">·</span>' + tags : ''}
+        </div>
+        ${ex.cue ? `<div class="cue" style="margin-top:2px;">${ex.cue}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('preview-content').innerHTML = `
+    <div style="margin-bottom:14px;">
+      <div class="mono xs" style="color:var(--green);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;">${prog.name}</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;line-height:1;margin-bottom:4px;">${day.name}</div>
+      <div class="muted sm" style="margin-bottom:10px;">${day.focus || ''}</div>
+      <div style="display:flex;gap:8px;">
+        <div style="flex:1;background:var(--s3);border-radius:4px;padding:8px;text-align:center;">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--accent);">${day.exercises.length}</div>
+          <div class="mono xs dim">Exercises</div>
+        </div>
+        <div style="flex:1;background:var(--s3);border-radius:4px;padding:8px;text-align:center;">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--accent);">${totalSets}</div>
+          <div class="mono xs dim">Sets</div>
+        </div>
+        <div style="flex:1;background:var(--s3);border-radius:4px;padding:8px;text-align:center;">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--accent);">${estMins}</div>
+          <div class="mono xs dim">Est. Min</div>
+        </div>
+      </div>
+    </div>
+    <div style="margin-bottom:14px;">${exRows}</div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-a f1" onclick="startWorkout(getPrograms().find(p=>p.id==='${prog.id}'),${dayIdx});closeMo('preview-mo');">▶ Start Workout</button>
+      <button class="btn btn-o" onclick="closeMo('preview-mo');">Close</button>
+    </div>`;
+
+  openMo('preview-mo');
+}
+
+function weekTap(i){const prog=getActiveProg();if(!prog||i>=6)return;previewWorkout(prog,i);}
 function startTodayWorkout(){
   const prog=getActiveProg();if(!prog){showToast('Select a program first');return;}
   const idx=getTodayIdx();if(idx>=6){showToast("It's rest day! Take it easy.");return;}
-  startWorkout(prog,idx);
+  previewWorkout(prog,idx);
 }
 function startWorkout(prog,dayIdx){
   const day=prog.days[dayIdx%prog.days.length];if(!day)return;
@@ -726,7 +793,7 @@ function renderProgramsPage(){
         ${!isA?`<button class="bico" onclick="selectProg('${prog.id}');event.stopPropagation();">▶</button>`:''}
       </div>
     </div>
-    <div class="pc-days">${prog.days.map((d,i)=>`<div class="pd-row" onclick="startWorkout(getPrograms().find(p=>p.id==='${prog.id}'),${i})">
+    <div class="pc-days">${prog.days.map((d,i)=>`<div class="pd-row" onclick="previewWorkout(getPrograms().find(p=>p.id==='${prog.id}'),${i})">
       <div class="pd-num">${i+1}</div>
       <div class="col f1"><div class="pd-name">${d.name}</div>${d.focus?`<div class="muted xs">${d.focus}</div>`:''}</div>
       <div class="dim xs">${d.exercises.length} ex</div>
@@ -1204,7 +1271,7 @@ function switchTab(page,btn){
 }
 function openMo(id){const el=document.getElementById(id);if(el){el.classList.add('show');el.style.display='flex';}}
 function closeMo(id){const el=document.getElementById(id);if(el){el.classList.remove('show');el.style.display='none';}}
-['ppick-mo','builder-mo','expick-mo','sdet-mo','sheets-mo','wpick-mo'].forEach(id=>{
+['ppick-mo','builder-mo','expick-mo','sdet-mo','sheets-mo','wpick-mo','preview-mo'].forEach(id=>{
   const el=document.getElementById(id);
   if(el)el.addEventListener('click',function(e){if(e.target===this)closeMo(id);});
 });
