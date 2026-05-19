@@ -813,11 +813,99 @@ function savePrograms(p){DB.set('programs',p);}
 function getSessions(){return DB.get('sessions',[]);}
 function saveSessions(s){DB.set('sessions',s);}
 function ensureBuiltin(){const p=getPrograms();if(!p.find(x=>x.id==='bcamp52')){p.unshift(BCAMP52);savePrograms(p);}}
+// Map from old exercise name strings → new exId
+const EX_NAME_TO_ID={
+  'Barbell Bench Press':'bb-bench','Dumbbell Bench Press':'db-bench',
+  'Incline Barbell Bench Press':'inc-bb-bench','Incline BB Bench Press':'inc-bb-bench',
+  'Incline Dumbbell Press':'inc-db-bench','Decline Dumbbell Press':'dec-db-bench',
+  'Cable Chest Fly':'cable-fly','Cable Fly':'cable-fly','Dumbbell Fly':'db-fly',
+  'Close-Grip Bench Press':'cg-bench','Pec Deck Machine':'pec-deck',
+  'Machine Chest Press':'chest-press-machine',
+  'Barbell Overhead Press':'bb-ohp','BB Overhead Press':'bb-ohp',
+  'Dumbbell Overhead Press':'db-ohp','Arnold Press':'arnold-press',
+  'Lateral Raise (Dumbbell)':'lat-raise-db','Lateral Raise (Cable)':'lat-raise-cable',
+  'DB Lateral Raise':'lat-raise-db','Cable Lateral Raise':'lat-raise-cable',
+  'Face Pull':'face-pull','Rear Delt Fly':'rear-delt-fly',
+  'Dumbbell Shrug':'db-shrug','DB Shrug':'db-shrug','Barbell Shrug':'bb-shrug',
+  'Conventional Deadlift':'deadlift','Barbell Deadlift':'deadlift',
+  'Sumo Deadlift':'sumo-deadlift',
+  'Barbell Bent-Over Row':'bb-row','Bent Over Row':'bb-row','Bent-Over Row':'bb-row',
+  'Single-Arm Dumbbell Row':'db-row','DB Row':'db-row',
+  'Seated Cable Row':'cable-row','Cable Row':'cable-row',
+  'Lat Pulldown':'lat-pulldown','Lat Pull Down':'lat-pulldown',
+  'Pull-Up':'pullup','Pull Up':'pullup','Pullup':'pullup',
+  'Weighted Pull-Up':'weighted-pullup','Weighted Pullup':'weighted-pullup',
+  'Chin-Up':'chinup','Chin Up':'chinup',
+  'T-Bar Row':'tbar-row','TBar Row':'tbar-row',
+  'Rack Pull':'rack-pull','Straight Arm Pulldown':'straight-arm-pulldown',
+  'Barbell Curl':'bb-curl','BB Curl':'bb-curl',
+  'Dumbbell Curl':'db-curl','DB Curl':'db-curl',
+  'Hammer Curl':'hammer-curl','Incline Dumbbell Curl':'inc-db-curl',
+  'Preacher Curl':'preacher-curl','Cable Curl':'cable-curl',
+  'Concentration Curl':'conc-curl',
+  'Skullcrusher':'skullcrusher','Skull Crusher':'skullcrusher',
+  'Tricep Pushdown':'tricep-pushdown','Triceps Pushdown':'tricep-pushdown',
+  'Overhead Tricep Extension':'oh-tricep-ext','OH Tricep Extension':'oh-tricep-ext',
+  'Tricep Kickback':'tricep-kickback','Tricep Dip':'tricep-dip',
+  'Barbell Back Squat':'bb-squat','Back Squat':'bb-squat',
+  'Barbell Front Squat':'bb-front-squat','Front Squat':'bb-front-squat',
+  'Leg Press':'leg-press','Hack Squat Machine':'hack-squat','Hack Squat':'hack-squat',
+  'Leg Extension':'leg-ext','Bulgarian Split Squat':'bss','BSS':'bss',
+  'Walking Lunge':'walking-lunge','Step-Up':'step-up',
+  'Romanian Deadlift':'rdl','RDL':'rdl','Dumbbell RDL':'db-rdl',
+  'Single-Leg RDL':'single-leg-rdl',
+  'Lying Leg Curl':'leg-curl-lying','Seated Leg Curl':'leg-curl-seated',
+  'Nordic Hamstring Curl':'nordic-curl','Nordic Curl':'nordic-curl',
+  'Barbell Hip Thrust':'hip-thrust','Hip Thrust':'hip-thrust',
+  'Cable Glute Kickback':'glute-kickback','Glute Kickback':'glute-kickback',
+  'Good Morning':'good-morning','Barbell Good Morning':'bb-good-morning',
+  'Standing Calf Raise':'standing-calf','Seated Calf Raise':'seated-calf',
+  'Leg Press Calf Raise':'leg-press-calf',
+  'HIIT Bike':'hiit-bike','Stairmaster':'stairmaster',
+  'LISS Walk':'liss-walk','Jump Rope':'jump-rope',
+  'Incline Treadmill Walk':'incline-treadmill',
+  'Rowing Machine':'rowing-machine',
+  'Plank':'plank','Ab Wheel Rollout':'ab-wheel','Cable Crunch':'cable-crunch',
+  'Hanging Leg Raise':'hanging-leg-raise',
+  'Goblet Squat':'db-goblet-squat','KB Swing':'kb-swing','Kettlebell Swing':'kb-swing',
+  'Farmer Carry':'db-farmers-carry','Farmers Carry':'db-farmers-carry',
+  'Dumbbell Pullover':'db-pullover','DB Pullover':'db-pullover',
+  'Trap Bar Deadlift':'trap-bar-deadlift','Floor Press':'floor-press',
+  'Landmine Press':'landmine-press','Landmine Row':'landmine-row',
+  'Push Press':'bb-push-press','Barbell Push Press':'bb-push-press',
+  'Pistol Squat':'pistol-squat','Box Jump':'box-jump',
+  'Muscle-Up':'muscle-up','Ring Dip':'ring-dip','Ring Row':'ring-row',
+  'Handstand Push-Up':'hspu','HSPU':'hspu','L-Sit':'l-sit',
+  'Dragon Flag':'dragon-flag','Bear Crawl':'bear-crawl',
+};
+
 function migrateOld(){
   if(DB.get('mig_v3'))return;
+  // Bodyweight
   ['bcamp_bodyweight','bcamp_bcamp_bodyweight'].forEach(k=>{const v=localStorage.getItem(k);if(v&&!DB.get('bw',null)){try{DB.set('bw',JSON.parse(v));}catch(e){}}});
+  // Notes
   ['bcamp_notes','bcamp_bcamp_notes'].forEach(k=>{const v=localStorage.getItem(k);if(v&&!DB.get('notes',null)){try{DB.set('notes',JSON.parse(v));}catch(e){}}});
   DB.set('mig_v3',true);
+}
+
+// Run once on every load to remap any sessions using old name-based keys
+function migrateSessionKeys(){
+  if(DB.get('mig_keys_v1'))return;
+  const sessions=getSessions();
+  let changed=false;
+  sessions.forEach(s=>{
+    if(!s.sets)return;
+    const newSets={};
+    Object.entries(s.sets).forEach(([k,v])=>{
+      // If key looks like a name (has spaces or caps) try to map it
+      const mapped=EX_NAME_TO_ID[k];
+      if(mapped){newSets[mapped]=v;changed=true;}
+      else newSets[k]=v; // keep as-is (already an id or unknown)
+    });
+    s.sets=newSets;
+  });
+  if(changed)saveSessions(sessions);
+  DB.set('mig_keys_v1',true);
 }
 
 // ── STATE ─────────────────────────────────────────────────────────────────
@@ -857,7 +945,16 @@ function renderTrainPage(){
     ['ts-ex','ts-sets','ts-time'].forEach(id=>document.getElementById(id).textContent='-');
   }
   renderWeekGrid(prog);
-  if(currentSession)showSessionView();
+  // Only show/rebuild session if not already displayed — prevents wiping inputs on tab switch
+  if(currentSession){
+    const sv=document.getElementById('session-view');
+    if(!sv.classList.contains('active')){
+      showSessionView();
+    }
+    // Always keep the session-view active and hide start button
+    sv.classList.add('active');
+    document.getElementById('start-btn').style.display='none';
+  }
 }
 function renderWeekGrid(prog){
   const grid=document.getElementById('week-grid');
@@ -946,7 +1043,7 @@ function startWorkout(prog,dayIdx){
   switchTab('train',document.querySelector('[data-page="train"]'));
   showSessionView();startSesTimer();
 }
-function showSessionView(){
+function showSessionView(force=false){
   if(!currentSession)return;
   const prog=getActiveProg();
   const day=prog?.days[currentSession.dayIdx%prog.days.length];if(!day)return;
@@ -954,8 +1051,13 @@ function showSessionView(){
   document.getElementById('start-btn').style.display='none';
   document.getElementById('ses-title').textContent=day.name;
   document.getElementById('ses-meta').textContent=day.focus||'';
-  const list=document.getElementById('ses-ex-list');list.innerHTML='';
-  day.exercises.forEach((ex,i)=>list.appendChild(buildSexEl(ex,i)));
+  const list=document.getElementById('ses-ex-list');
+  // Only rebuild the exercise list if it's empty or force-refreshed
+  // This prevents wiping user-entered values when switching tabs
+  if(force || !list.children.length){
+    list.innerHTML='';
+    day.exercises.forEach((ex,i)=>list.appendChild(buildSexEl(ex,i)));
+  }
 }
 function buildSexEl(exDef,idx){
   const cat=getExById(exDef.exId)||{name:exDef.exId,icon:'🏋'};
@@ -967,24 +1069,37 @@ function buildSexEl(exDef,idx){
   const ek=exDef.exId+'__'+idx;
   const prev=getPrevSets(exDef.exId);
   const nS=parseInt(exDef.sets)||3;
+  // Get already-saved sets for this exercise from the current session
+  const savedSets=(currentSession&&currentSession.sets&&currentSession.sets[exDef.exId])||[];
   let rows='';
   for(let s=1;s<=nS;s++){
     const p=prev[s-1]||null;
+    const saved=savedSets[s-1]||null;
+    // Use saved value if it exists, otherwise show prev as placeholder
+    const wVal=saved&&saved.weight&&saved.weight!=='-'?saved.weight:'';
+    const rVal=saved&&saved.reps&&saved.reps!=='-'?saved.reps:'';
+    const isDone=saved&&saved.done?'done':'';
+    const doneSymbol=saved&&saved.done?'✓':'✓';
     rows+=`<tr>
       <td class="sn-cell">${s}</td>
-      <td class="si-cell"><input type="number" placeholder="${p?p.weight:'lbs'}" min="0" step="2.5" data-ek="${ek}" data-s="${s}" data-f="w"></td>
-      <td class="si-cell"><input type="number" placeholder="${String(exDef.reps).split('-')[0]}" min="0" data-ek="${ek}" data-s="${s}" data-f="r"></td>
-      <td class="sd-cell"><button class="set-chk" data-ek="${ek}" data-s="${s}" data-rest="${exDef.rest||90}" data-en="${cat.name.substring(0,25)}" onclick="markSetDone(this)">✓</button></td>
+      <td class="si-cell"><input type="number" placeholder="${p?p.weight:'lbs'}" min="0" step="2.5" data-ek="${ek}" data-s="${s}" data-f="w" value="${wVal}"></td>
+      <td class="si-cell"><input type="number" placeholder="${String(exDef.reps).split('-')[0]}" min="0" data-ek="${ek}" data-s="${s}" data-f="r" value="${rVal}"></td>
+      <td class="sd-cell"><button class="set-chk ${isDone}" data-ek="${ek}" data-s="${s}" data-rest="${exDef.rest||90}" data-en="${cat.name.substring(0,25)}" onclick="markSetDone(this)">${doneSymbol}</button></td>
     </tr><tr><td colspan="4"><div class="set-prev">Prev: ${p?p.weight+'x'+p.reps:'-'}</div></td></tr>`;
   }
-  wrap.innerHTML=`<div class="sex-hdr" onclick="toggleSex(${idx})">
+  // Check if this exercise was already saved in the current session
+  const alreadyLogged=currentSession&&currentSession.sets&&currentSession.sets[exDef.exId]&&currentSession.sets[exDef.exId].length>0;
+  wrap.innerHTML=`<div class="sex-hdr" onclick="toggleSex(${idx})" id="sxh-${idx}">
     <div style="font-size:19px;flex-shrink:0;">${cat.icon}</div>
     <div class="col f1">
       <div class="row"><span class="sex-name">${cat.name}</span>${ss}</div>
       <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text2);">${exDef.sets} x ${exDef.reps} · ${fmtRest(exDef.rest)}</div>
       ${cue}
     </div>
-    <div class="dim" style="font-size:11px;">›</div>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <div id="sxlog-${idx}" style="width:24px;height:24px;border-radius:4px;border:1px solid ${alreadyLogged?'var(--green)':'var(--border2)'};background:${alreadyLogged?'var(--green)':'transparent'};display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;transition:all .2s;">${alreadyLogged?'✓':''}</div>
+      <div class="dim" style="font-size:11px;">›</div>
+    </div>
   </div>
   <div class="sex-body" id="sxb-${idx}" style="display:none;">
     <table class="set-tbl"><thead><tr><th>#</th><th>lbs</th><th>Reps</th><th>✓</th></tr></thead><tbody>${rows}</tbody></table>
@@ -1014,6 +1129,10 @@ function saveExSets(ek,exId){
   currentSession.sets[exId]=sets;
   DB.set('cur_session',currentSession);
   showToast('Sets saved');
+  // Update the green log indicator on the exercise header
+  const exIdx=ek.split('__')[1];
+  const logBox=document.getElementById('sxlog-'+exIdx);
+  if(logBox){logBox.style.background='var(--green)';logBox.style.borderColor='var(--green)';logBox.textContent='✓';}
   syncToSheets({exercise:exId,date:today(),phase:getPhaseLabel(),day:currentSession.dayName||'',sets:sets.map(s=>({set:Number(s.set),weight:String(s.weight),reps:String(s.reps),done:!!s.done}))});
 }
 function getPhaseLabel(){const w=getCurrentWeek();return w<=16?'Phase 1 - Cut':w<=34?'Phase 2 - Lean Bulk':'Phase 3 - Recomp';}
@@ -1680,7 +1799,7 @@ function showToast(msg,color){
 
 // ── INIT ──────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded',()=>{
-  ensureBuiltin();migrateOld();initTheme();initSheetsUI();updateWeekUI();
+  ensureBuiltin();migrateOld();migrateSessionKeys();initTheme();initSheetsUI();updateWeekUI();
   const bwD=document.getElementById('bw-d');if(bwD)bwD.value=today();
   const nD=document.getElementById('note-d');if(nD)nD.value=today();
   const saved=DB.get('cur_session',null);if(saved){currentSession=saved;showSessionView();startSesTimer();}
