@@ -412,11 +412,15 @@ canvas{display:block;width:100%!important;}
 <div class="page" id="page-body">
 <div class="page-header"><div class="page-title">BODY <span>TRACK</span></div><div class="page-sub">Weight, volume landmarks, notes</div></div>
 <div class="sec-label">Bodyweight Log</div>
-<div class="bw-row2"><input type="number" class="inp" id="bw-w" placeholder="lbs" step="0.1" min="50" max="600"><input type="date" class="inp" id="bw-d"><button class="btn btn-a" onclick="logBW()">Log</button></div>
+<div class="bw-row2"><input type="number" class="inp" id="bw-w" placeholder="lbs" step="0.1" min="100" max="500"><input type="date" class="inp" id="bw-d"><button class="btn btn-a" onclick="logBW()">Log</button></div>
+<div style="display:flex;gap:8px;align-items:center;padding:0 16px 8px;">
+  <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;white-space:nowrap;">Goal</span>
+  <input type="number" class="inp" id="goal-w" placeholder="200" step="0.5" min="100" max="500" style="font-size:13px;text-align:center;" oninput="DB.set('goal_weight',parseFloat(this.value)||200);drawBWChart();">
+  <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);">lbs</span>
+</div>
 <div class="chart-card"><canvas id="bw-chart" height="100"></canvas></div>
 <div class="card mx16 mb8"><div id="bwh-list"></div></div>
-<div class="sec-label">Weekly Volume</div>
-<div class="vg" id="vol-grid"></div>
+
 <div class="sec-label">Session Notes</div>
 <div style="padding:0 16px;">
 <div class="ig"><label class="ilbl">Date</label><input type="date" class="inp" id="note-d"></div>
@@ -1433,6 +1437,78 @@ function addCustomEx(){
 function deleteCustomEx(id){if(!confirm('Delete?'))return;saveCustomEx(getCustomEx().filter(e=>e.id!==id));initCatalogFilters();renderCatalog();showToast('Deleted');}
 
 // ── STATS PAGE ────────────────────────────────────────────────────────────
+// ── CHART HELPERS ─────────────────────────────────────────────────────────
+function buildWkData(sessions, mode, n=12){
+  const labels=[], values=[];
+  for(let i=n-1;i>=0;i--){
+    const wS=new Date();
+    wS.setDate(wS.getDate()-wS.getDay()-i*7+1);wS.setHours(0,0,0,0);
+    const wE=new Date(wS);wE.setDate(wS.getDate()+6);wE.setHours(23,59,59,999);
+    const wSes=sessions.filter(s=>new Date(s.date)>=wS&&new Date(s.date)<=wE);
+    if(mode==='count'){
+      values.push(wSes.length);
+    } else {
+      const vol=wSes.reduce((a,s)=>{
+        if(!s.sets)return a;
+        return a+Object.values(s.sets).reduce((b,sets)=>
+          b+sets.reduce((c,st)=>c+(parseFloat(st.weight)||0)*(parseInt(st.reps)||0),0),0);
+      },0);
+      values.push(Math.round(vol/1000*10)/10); // one decimal klbs
+    }
+    labels.push(i===0?'Now':i===n-1?n+'w':'');
+  }
+  return{labels,values};
+}
+
+function drawBarChart(canvasId, data, n){
+  // Use a small delay + explicit width to handle hidden-tab rendering
+  const attempt = ()=>{
+    const canvas=document.getElementById(canvasId);
+    if(!canvas)return;
+    const {labels,values}=data;
+    // If page is hidden, canvas.offsetWidth may be 0 — use parent width or fallback
+    const parentW=canvas.parentElement?canvas.parentElement.offsetWidth:0;
+    const W=Math.max(canvas.offsetWidth, parentW, 300);
+    const H=parseInt(canvas.getAttribute('height'))||90;
+    canvas.width=W;canvas.height=H;
+    const ctx=canvas.getContext('2d');
+    ctx.clearRect(0,0,W,H);
+    const max=Math.max(...values,0.1);
+    const nc=values.length, pad=10, gap=2;
+    const bw=Math.max(2,(W-pad*2)/nc-gap);
+    values.forEach((v,i)=>{
+      const x=pad+i*((W-pad*2)/nc);
+      const bh=Math.max(0,(v/max)*(H-22));
+      const y=H-16-bh;
+      // Bar bg
+      ctx.fillStyle='rgba(255,255,255,0.04)';
+      ctx.fillRect(x,H-16-(H-22),bw,H-22);
+      // Bar fill
+      if(v>0){
+        const g=ctx.createLinearGradient(x,y,x,H-16);
+        g.addColorStop(0,'rgba(232,255,59,0.9)');
+        g.addColorStop(1,'rgba(232,255,59,0.2)');
+        ctx.fillStyle=g;ctx.fillRect(x,y,bw,bh);
+      }
+      // Label
+      if(labels[i]){
+        ctx.fillStyle='rgba(255,255,255,0.25)';
+        ctx.font='8px monospace';ctx.textAlign='center';
+        ctx.fillText(labels[i],x+bw/2,H-3);
+      }
+      // Value on bar
+      if(v>0&&bh>14){
+        ctx.fillStyle='rgba(255,255,255,0.7)';
+        ctx.font='bold 8px monospace';ctx.textAlign='center';
+        ctx.fillText(v,x+bw/2,y-2);
+      }
+    });
+  };
+  // Try immediately, then retry after paint to handle hidden-tab zero-width
+  attempt();
+  requestAnimationFrame(()=>setTimeout(attempt, 50));
+}
+
 function renderStatsPage(){
   const sessions=getSessions();
   const now=new Date();
@@ -1954,7 +2030,11 @@ function saveNote(){
   saveNotes(notes.slice(0,100));renderBodyPage();document.getElementById('note-t').value='';showToast('Note saved!');
 }
 function deleteNote(date){saveNotes(getNotes().filter(n=>n.date!==date));renderBodyPage();}
-function renderBodyPage(){renderBWHistory();drawBWChart();renderVolGrid();renderNotesList();}
+function renderBodyPage(){
+  renderBWHistory();drawBWChart();renderNotesList();
+  const gi=document.getElementById('goal-w');
+  if(gi&&!gi.value) gi.value=DB.get('goal_weight',200)||'';
+}
 function renderBWHistory(){
   const data=getBW().slice(0,20),el=document.getElementById('bwh-list');if(!el)return;
   if(!data.length){el.innerHTML='<div style="padding:14px;text-align:center;"><div class="muted sm">No entries yet.</div></div>';return;}
@@ -1970,27 +2050,74 @@ function renderBWHistory(){
 }
 function drawBWChart(){
   const canvas=document.getElementById('bw-chart');if(!canvas)return;
-  const data=getBW().slice(0,24).reverse();
-  if(data.length<2){canvas.style.opacity='0.2';return;}canvas.style.opacity='1';
-  const W=canvas.offsetWidth||300,H=parseInt(canvas.getAttribute('height'))||100;
-  canvas.width=W;canvas.height=H;const ctx=canvas.getContext('2d');ctx.clearRect(0,0,W,H);
-  const gW=200,weights=data.map(e=>e.weight),mn=Math.min(...weights,gW)-5,mx=Math.max(...weights,gW)+5;
-  const sx=i=>14+i*((W-28)/Math.max(data.length-1,1));
-  const sy=v=>H-16-((v-mn)/(mx-mn))*(H-26);
-  const gy=sy(gW);
-  ctx.setLineDash([4,4]);ctx.strokeStyle='rgba(77,159,255,0.4)';ctx.lineWidth=1;
-  ctx.beginPath();ctx.moveTo(14,gy);ctx.lineTo(W-14,gy);ctx.stroke();ctx.setLineDash([]);
-  ctx.fillStyle='rgba(77,159,255,0.5)';ctx.font='8px monospace';ctx.textAlign='left';ctx.fillText('Goal '+gW+'lb',16,gy-3);
-  const grad=ctx.createLinearGradient(0,0,0,H);grad.addColorStop(0,'rgba(232,255,59,0.2)');grad.addColorStop(1,'rgba(232,255,59,0)');
-  ctx.fillStyle=grad;ctx.beginPath();ctx.moveTo(sx(0),H-16);
-  data.forEach((e,i)=>ctx.lineTo(sx(i),sy(e.weight)));
-  ctx.lineTo(sx(data.length-1),H-16);ctx.closePath();ctx.fill();
+  const allData=getBW().slice().sort((a,b)=>a.date.localeCompare(b.date));
+  const data=allData.slice(-30);
+  if(data.length<1){canvas.style.opacity='0.2';return;}
+  canvas.style.opacity='1';
+  const parentW=canvas.parentElement?canvas.parentElement.offsetWidth:0;
+  const W=Math.max(canvas.offsetWidth,parentW,280);
+  const H=parseInt(canvas.getAttribute('height'))||110;
+  canvas.width=W;canvas.height=H;
+  const ctx=canvas.getContext('2d');ctx.clearRect(0,0,W,H);
+  const goalW=DB.get('goal_weight',200);
+  const weights=data.map(e=>parseFloat(e.weight));
+  const dataMin=Math.min(...weights),dataMax=Math.max(...weights);
+  const dataPad=Math.max((dataMax-dataMin)*0.3,3);
+  const useGoalInScale=goalW>=dataMin-20&&goalW<=dataMax+20;
+  const mn=Math.floor(Math.min(dataMin-dataPad,useGoalInScale?goalW:dataMin-dataPad));
+  const mx=Math.ceil(Math.max(dataMax+dataPad,useGoalInScale?goalW:dataMax+dataPad));
+  const PAD_L=40,PAD_R=12,PAD_T=16,PAD_B=18;
+  const chartW=W-PAD_L-PAD_R,chartH=H-PAD_T-PAD_B;
+  const sx=i=>PAD_L+i*(chartW/Math.max(data.length-1,1));
+  const sy=v=>PAD_T+chartH-(((v-mn)/(mx-mn))*chartH);
+  // Y-axis grid
+  ctx.font='8px monospace';
+  for(let i=0;i<=4;i++){
+    const v=Math.round(mn+(mx-mn)*(i/4));
+    const y=sy(v);
+    ctx.strokeStyle='rgba(255,255,255,0.05)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(PAD_L,y);ctx.lineTo(W-PAD_R,y);ctx.stroke();
+    ctx.fillStyle='rgba(255,255,255,0.3)';ctx.textAlign='right';
+    ctx.fillText(v,PAD_L-4,y+3);
+  }
+  // Goal line
+  if(goalW>=mn&&goalW<=mx){
+    const gy=sy(goalW);
+    ctx.setLineDash([5,4]);ctx.strokeStyle='rgba(77,159,255,0.6)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(PAD_L,gy);ctx.lineTo(W-PAD_R,gy);ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='rgba(77,159,255,0.8)';ctx.textAlign='left';ctx.font='8px monospace';
+    ctx.fillText('Goal '+goalW,PAD_L+3,gy-3);
+  }
+  // Area fill
+  const grad=ctx.createLinearGradient(0,PAD_T,0,H-PAD_B);
+  grad.addColorStop(0,'rgba(232,255,59,0.15)');grad.addColorStop(1,'rgba(232,255,59,0)');
+  ctx.fillStyle=grad;ctx.beginPath();ctx.moveTo(sx(0),H-PAD_B);
+  data.forEach((e,i)=>ctx.lineTo(sx(i),sy(parseFloat(e.weight))));
+  ctx.lineTo(sx(data.length-1),H-PAD_B);ctx.closePath();ctx.fill();
+  // Line
   ctx.strokeStyle='var(--accent)';ctx.lineWidth=2;ctx.beginPath();
-  data.forEach((e,i)=>i===0?ctx.moveTo(sx(i),sy(e.weight)):ctx.lineTo(sx(i),sy(e.weight)));ctx.stroke();
+  data.forEach((e,i)=>i===0?ctx.moveTo(sx(i),sy(parseFloat(e.weight))):ctx.lineTo(sx(i),sy(parseFloat(e.weight))));
+  ctx.stroke();
+  // Dots and first/last labels
   data.forEach((e,i)=>{
-    ctx.fillStyle='var(--accent)';ctx.beginPath();ctx.arc(sx(i),sy(e.weight),3,0,Math.PI*2);ctx.fill();
-    if(i===0||i===data.length-1){ctx.fillStyle='rgba(232,255,59,0.9)';ctx.font='bold 9px monospace';ctx.textAlign='center';ctx.fillText(e.weight+'lb',sx(i),sy(e.weight)-7);}
+    const w=parseFloat(e.weight);
+    ctx.fillStyle='var(--accent)';ctx.beginPath();ctx.arc(sx(i),sy(w),3,0,Math.PI*2);ctx.fill();
+    if(i===0||i===data.length-1){
+      ctx.fillStyle='rgba(232,255,59,0.95)';ctx.font='bold 9px monospace';
+      ctx.textAlign=i===0?'left':'right';
+      ctx.fillText(w+'lb',i===0?sx(i)+5:sx(i)-5,sy(w)-7);
+    }
   });
+  // Rate of change
+  if(data.length>=2){
+    const first=parseFloat(data[0].weight),last=parseFloat(data[data.length-1].weight);
+    const days=Math.max(1,(new Date(data[data.length-1].date)-new Date(data[0].date))/864e5);
+    const rate=((last-first)/days*7).toFixed(1);
+    const rc=parseFloat(rate)<0?'var(--green)':parseFloat(rate)>0?'var(--red)':'var(--text3)';
+    ctx.fillStyle=rc;ctx.font='bold 8px monospace';ctx.textAlign='right';
+    ctx.fillText((parseFloat(rate)>=0?'+':'')+rate+' lbs/wk',W-PAD_R,PAD_T-3);
+  }
 }
 const VOL_MAP={Chest:{mev:8,mrv:22,muscles:['Chest']},Back:{mev:10,mrv:25,muscles:['Back']},Shoulders:{mev:8,mrv:20,muscles:['Shoulders']},Quads:{mev:8,mrv:20,muscles:['Quads']},Hamstrings:{mev:6,mrv:20,muscles:['Hamstrings']},Glutes:{mev:4,mrv:16,muscles:['Glutes']},Biceps:{mev:8,mrv:20,muscles:['Biceps','Forearms']},Triceps:{mev:6,mrv:18,muscles:['Triceps']}};
 function getWeekStart(){const now=new Date(),d=now.getDay();const m=new Date(now);m.setDate(now.getDate()-(d===0?6:d-1));m.setHours(0,0,0,0);return dateKey(m);}
@@ -2098,7 +2225,15 @@ function switchTab(page,btn){
   const el=document.getElementById('page-'+page);if(el)el.classList.add('active');if(btn)btn.classList.add('active');
   if(page==='programs')renderProgramsPage();
   else if(page==='catalog'){initCatalogFilters();renderCatalog();}
-  else if(page==='stats')renderStatsPage();
+  else if(page==='stats'){
+    renderStatsPage();
+    // Redraw canvases after tab is visible (offsetWidth was 0 when hidden)
+    setTimeout(()=>{
+      const sessions=getSessions();
+      drawBarChart('chart-vol', buildWkData(sessions,'vol',16), 16);
+      renderStrList(sessions);
+    }, 80);
+  }
   else if(page==='body')renderBodyPage();
   else if(page==='train')renderTrainPage();
 }
