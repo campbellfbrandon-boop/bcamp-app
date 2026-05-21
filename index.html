@@ -1697,85 +1697,125 @@ function renderStrList(sessions){
   });
   const list=document.getElementById('str-list');
   if(!Object.keys(exMap).length){
-    list.innerHTML='<div class="empty" style="padding:20px;"><div class="empty-s">Log workouts to see strength trends.</div></div>';return;
+    list.innerHTML='<div class="empty" style="padding:20px;"><div class="empty-s">Log workouts to see strength trends here.</div></div>';
+    return;
   }
   const items=Object.entries(exMap).map(([exId,recs])=>{
     const sorted=recs.slice().sort((a,b)=>a.date.localeCompare(b.date));
     const best=recs.reduce((b,r)=>r.e1rm>b.e1rm?r:b,recs[0]);
-    // Week-over-week trend (last 2 weeks)
-    const twoWkAgo=dateKey(new Date(new Date()-14*864e5));
+    const twoWkAgo=dateKey(new Date(Date.now()-14*864e5));
     const recent=sorted.filter(r=>r.date>=twoWkAgo);
     const older=sorted.filter(r=>r.date<twoWkAgo);
     const recentBest=recent.length?Math.max(...recent.map(r=>r.e1rm)):null;
     const olderBest=older.length?Math.max(...older.map(r=>r.e1rm)):null;
-    const trend=recentBest&&olderBest?recentBest-olderBest:null;
-    return{exId,best,trend,recs:sorted,allBest:best.e1rm};
+    const trend=(recentBest!=null&&olderBest!=null)?recentBest-olderBest:null;
+    const byDate={};
+    sorted.forEach(r=>{if(!byDate[r.date]||r.e1rm>byDate[r.date].e1rm)byDate[r.date]=r;});
+    const dailyBest=Object.values(byDate).sort((a,b)=>a.date.localeCompare(b.date));
+    return{exId,best,trend,recs:sorted,dailyBest,allBest:best.e1rm};
   }).sort((a,b)=>b.allBest-a.allBest);
 
   const maxE=Math.max(...items.map(x=>x.allBest),1);
-  list.innerHTML=items.map(item=>{
+
+  // Build HTML using DOM-safe approach (no nested quote conflicts)
+  list.innerHTML='';
+  items.forEach((item,idx)=>{
     const cat=getCatalog().find(e=>e.id===item.exId)||{name:item.exId,icon:'🏋'};
     const tc=item.trend>0?'var(--green)':item.trend<0?'var(--red)':'var(--text3)';
-    const ta=item.trend!=null?(item.trend>0?'↑ +':item.trend<0?'↓ ':'→ ')+(item.trend!==0?Math.abs(item.trend)+'lbs':'stable'):'—';
+    const ta=item.trend!=null
+      ?(item.trend>0?'↑ +'+item.trend+'lbs':item.trend<0?'↓ '+Math.abs(item.trend)+'lbs':'→ stable')
+      :'—';
     const barW=Math.round(item.allBest/maxE*100);
-    // Mini sparkline data (last 8 sessions)
-    const last8=item.recs.slice(-8);
-    return `<div class="str-item" onclick="openSdet('strength','${item.exId}')">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
-        <div style="font-size:16px;">${cat.icon||'🏋'}</div>
-        <div style="font-size:13px;font-weight:600;flex:1;">${cat.name||item.exId}</div>
-        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);">›</div>
-      </div>
-      <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:5px;">
-        <div>
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--accent);letter-spacing:2px;line-height:1;">${item.allBest}</div>
-          <div style="font-family:'DM Mono',monospace;font-size:8px;color:var(--text3);letter-spacing:1px;">LBS EST. 1RM</div>
-        </div>
-        <div style="flex:1;">
-          <canvas id="spark-${item.exId}" height="36" style="width:100%;"></canvas>
-        </div>
-        <div style="text-align:right;">
-          <div style="font-family:'DM Mono',monospace;font-size:11px;color:${tc};font-weight:700;">${ta}</div>
-          <div style="font-family:'DM Mono',monospace;font-size:8px;color:var(--text3);">2wk trend</div>
-        </div>
-      </div>
-      <div style="height:3px;background:var(--s3);border-radius:2px;">
-        <div style="height:100%;width:${barW}%;background:var(--accent);border-radius:2px;"></div>
-      </div>
-      <div style="display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:9px;color:var(--text3);margin-top:3px;">
-        <span>Best: ${item.best.weight}lbs × ${item.best.reps} · ${item.best.date}</span>
-        <span>${item.recs.length} sets logged</span>
-      </div>
-    </div>`;
-  }).join('');
+    const safeId='spark'+idx; // simple numeric ID avoids all special char issues
+    const borderColor=item.trend>0?'var(--green)':item.trend<0?'var(--red)':'var(--border)';
 
-  // Draw sparklines after DOM is ready
-  requestAnimationFrame(()=>{
-    items.forEach(item=>{
-      const canvas=document.getElementById('spark-'+item.exId);
+    const card=document.createElement('div');
+    card.className='str-item';
+    card.style.cssText='border-left:3px solid '+borderColor+';cursor:pointer;';
+    card.onclick=()=>openSdet('strength',item.exId);
+    card.innerHTML=
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">'
+        +'<div style="font-size:18px;">'+(cat.icon||'🏋')+'</div>'
+        +'<div style="font-size:13px;font-weight:600;flex:1;">'+(cat.name||item.exId)+'</div>'
+        +'<div style="font-size:9px;color:var(--text3);letter-spacing:1px;">TAP FOR HISTORY ›</div>'
+      +'</div>'
+      +'<div style="display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;margin-bottom:8px;">'
+        +'<div>'
+          +'<div style="font-family:Bebas Neue,sans-serif;font-size:32px;color:var(--accent);letter-spacing:2px;line-height:1;">'+item.allBest+'</div>'
+          +'<div style="font-size:8px;color:var(--text3);letter-spacing:1px;">EST. 1RM</div>'
+        +'</div>'
+        +'<canvas id="'+safeId+'" height="44" style="display:block;width:100%;"></canvas>'
+        +'<div style="text-align:right;min-width:56px;">'
+          +'<div style="font-size:12px;color:'+tc+';font-weight:700;">'+ta+'</div>'
+          +'<div style="font-size:8px;color:var(--text3);">2wk trend</div>'
+        +'</div>'
+      +'</div>'
+      +'<div style="height:4px;background:var(--s3);border-radius:2px;margin-bottom:4px;">'
+        +'<div style="height:100%;width:'+barW+'%;background:linear-gradient(90deg,var(--accent),rgba(232,255,59,0.4));border-radius:2px;"></div>'
+      +'</div>'
+      +'<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text3);">'
+        +'<span>Best: '+item.best.weight+'lbs × '+item.best.reps+' · '+item.best.date+'</span>'
+        +'<span>'+item.recs.length+' sets logged</span>'
+      +'</div>';
+    list.appendChild(card);
+  });
+
+  // Draw sparklines — with double-attempt for hidden-tab zero-width
+  function drawSparklines(){
+    items.forEach((item,idx)=>{
+      const canvas=document.getElementById('spark'+idx);
       if(!canvas)return;
-      const last8=item.recs.slice(-8);
-      if(last8.length<2)return;
-      const W=canvas.offsetWidth||120,H=36;
+      const pts=item.dailyBest;
+      const parentW=canvas.parentElement?canvas.parentElement.offsetWidth:0;
+      const W=Math.max(canvas.offsetWidth,parentW,80);
+      const H=44;
       canvas.width=W;canvas.height=H;
+      if(pts.length<1)return;
       const ctx=canvas.getContext('2d');
       ctx.clearRect(0,0,W,H);
-      const vals=last8.map(r=>r.e1rm);
-      const mn=Math.min(...vals)-5,mx=Math.max(...vals)+5;
-      const sx=i=>4+i*((W-8)/Math.max(last8.length-1,1));
-      const sy=v=>H-4-((v-mn)/(mx-mn))*(H-8);
-      // Line
-      ctx.strokeStyle='rgba(232,255,59,0.7)';ctx.lineWidth=1.5;ctx.beginPath();
-      last8.forEach((r,i)=>i===0?ctx.moveTo(sx(i),sy(r.e1rm)):ctx.lineTo(sx(i),sy(r.e1rm)));
+      if(pts.length===1){
+        ctx.fillStyle='rgba(232,255,59,0.6)';ctx.font='bold 10px monospace';ctx.textAlign='center';
+        ctx.fillText(pts[0].e1rm+'lbs',W/2,H/2+4);
+        return;
+      }
+      const vals=pts.map(p=>p.e1rm);
+      const mn=Math.min(...vals),mx=Math.max(...vals);
+      const range=Math.max(mx-mn,10);
+      const pad=range*0.2;
+      const yMin=mn-pad,yMax=mx+pad;
+      const sx=i=>4+i*((W-8)/Math.max(pts.length-1,1));
+      const sy=v=>H-8-((v-yMin)/(yMax-yMin))*(H-16);
+      // Area fill
+      const grad=ctx.createLinearGradient(0,0,0,H);
+      grad.addColorStop(0,'rgba(232,255,59,0.18)');
+      grad.addColorStop(1,'rgba(232,255,59,0)');
+      ctx.fillStyle=grad;ctx.beginPath();ctx.moveTo(sx(0),H-8);
+      pts.forEach((p,i)=>ctx.lineTo(sx(i),sy(p.e1rm)));
+      ctx.lineTo(sx(pts.length-1),H-8);ctx.closePath();ctx.fill();
+      // Line — color by trend
+      const lc=item.trend>0?'rgba(61,220,132,0.9)':item.trend<0?'rgba(255,77,77,0.8)':'rgba(232,255,59,0.85)';
+      ctx.strokeStyle=lc;ctx.lineWidth=2;ctx.beginPath();
+      pts.forEach((p,i)=>i===0?ctx.moveTo(sx(i),sy(p.e1rm)):ctx.lineTo(sx(i),sy(p.e1rm)));
       ctx.stroke();
-      // End dot
-      const last=last8[last8.length-1];
-      ctx.fillStyle='var(--accent)';ctx.beginPath();
-      ctx.arc(sx(last8.length-1),sy(last.e1rm),2.5,0,Math.PI*2);ctx.fill();
+      // All dots
+      pts.forEach((p,i)=>{
+        const isPR=p.e1rm===mx;
+        ctx.fillStyle=isPR?'var(--green)':lc;
+        ctx.beginPath();ctx.arc(sx(i),sy(p.e1rm),isPR?4:2.5,0,Math.PI*2);ctx.fill();
+        if(isPR){
+          ctx.fillStyle='rgba(61,220,132,0.9)';ctx.font='bold 8px monospace';ctx.textAlign='center';
+          ctx.fillText('PR',sx(i),sy(p.e1rm)-6);
+        }
+      });
+      // Date labels
+      ctx.fillStyle='rgba(255,255,255,0.2)';ctx.font='7px monospace';
+      ctx.textAlign='left';ctx.fillText(pts[0].date.slice(5),sx(0),H-1);
+      ctx.textAlign='right';ctx.fillText(pts[pts.length-1].date.slice(5),sx(pts.length-1),H-1);
     });
-  });
+  }
+  drawSparklines();
+  requestAnimationFrame(()=>setTimeout(drawSparklines,80));
 }
-
 // ── RECENT SESSIONS ────────────────────────────────────────────────────────
 function renderRecentSessions(sessions){
   const el=document.getElementById('recent-sessions-list');if(!el)return;
